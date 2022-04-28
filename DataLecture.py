@@ -2,7 +2,6 @@ import json
 import os
 from Contenedor import Item
 def ExpotarJSON(path, cajas:list,bin:list):
-    assert os.path.isfile(path)
     data = {
       "box": [],
       "bin": {

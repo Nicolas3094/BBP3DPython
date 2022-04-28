@@ -73,7 +73,6 @@ def DBLF(bin:Bin, itemsToPack:list,ITEMSDATA:list):
     #PossiblePositions(path=path,positions=cola)
 
 def DBLF2(bin:Bin, itemsToPack:list, ITEMSDATA:list):
-    bin.reset()
     items = itemsToPack.copy()
     pointsQ = ColaP()
     pointsQ.push([0,0,0])

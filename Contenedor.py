@@ -1,4 +1,7 @@
+from typing import List
 import numpy as np
+
+
 
 class Item:
     def __init__(self,classType=0,dimensions=None, minMaxVertex = None):
@@ -18,7 +21,6 @@ class Item:
 
 class Bin:
     def __init__(self, dimensiones:list, n:int):
-
         self._loadedItems = list()
         self.dimensions = dimensiones
         self.ni = [ 0 for i in range(n)]
@@ -34,7 +36,7 @@ class Bin:
         self._prevBox = currentItem
         self._n+=1
 
-    def getLoadVol(self)->float:
+    def getLoadVol(self)->int:
         return self._loaded_volume
     def getBox(self, index:int)->Item:
         return self._loadedItems[index]

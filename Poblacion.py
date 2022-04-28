@@ -1,35 +1,43 @@
+from typing import List
+
+Genome = List[int]
+Population = List[Genome]
+
 class Individuo:
-    def __init__(self, code:list=None ,BoxSeq:dict=None):
-        self.fi=0
-        self.code = code
-        self.params =None
-        if(BoxSeq is not None and code is None):
-            self.code= self.__cod__(BoxSeq)
-    def __cod__(self,BoxSeq:dict):
-        codif = list(BoxSeq.keys())
-        return codif
+    def __init__(self, code:Genome):
+        self.fi=None
+        self.genome:Genome = code
+        self.params = None
     def AddParameter(self,param):
         self.params = param
+    def __str__(self) -> str:
+        return ",".join(map(str,self.genome))
+    def __eq__(self, other: list) -> bool:
+        return self.genome == other
+    def __getitem__(self, item)->int:
+        return self.genome[item]
 
-class Poblacion(list):
-    def __init__(self,num_pop:int):
-        self.n = num_pop
-        self.prom = 0
-        self = list()
+class Poblation:
+    def __init__(self, num:int=None, genomes:Population = None):
+        self.poblation:Population = []
+        self.n = num
+        if genomes is not None and num is None:
+            self.poblation:Population = genomes
+            self.n = len(genomes)
 
     def Add(self,individuo:Individuo):
-        self.append(individuo)
+        self.poblation.append(individuo)
 
-    def CreateInd(self, code=None, BoxSeq=None, param=None):
-        newInd = Individuo(code=code,BoxSeq=BoxSeq)
-        if param is not None:
-            newInd.AddParameter(param)
-        self.Add(individuo = newInd)
-        
-    def Convergence(self)->float:
-        f_best = self[0].fi
-        f_worst = self[-1].fi
-        return (f_best - f_worst)/(f_best*f_best)
+    def CreateInd(self, code:Genome=None):
+        newInd = Individuo(code=code)
+        self.Add(newInd)
+    def DeleteInd(self, index:int):
+        del self.poblation[index]
+    def __getitem__(self, item)->Individuo:
+        return self.poblation[item]
+
+    def __str__(self) -> str:
+        return "\n".join(map(str,self.poblation))
 
 
             
