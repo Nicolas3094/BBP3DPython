@@ -54,13 +54,15 @@ class AG:
         self.__initValues__()
 
     def train(self,maxGen,contenedor,Data):
-        self._gen = maxGen
+        self.EvaluateFitness(self.pob,contenedor,Data)
         for _ in np.arange(maxGen):
-            self.EvaluateFitness(self.pob,contenedor,Data)
             self._RegistrarDatos__()
+            self.CrearGeneracion()
+            self.EvaluateFitness(self.pob,contenedor,Data)
+            print(_)
             if self.Condition():
                 break
-            self.CrearGeneracion()
+            self._gen = _
         
     def EvaluateFitness(self,pobl:Poblation,dimBin,DataSet):
         for individuo in pobl:
@@ -118,7 +120,7 @@ class AG:
         self.pob.poblation = nexPob.poblation
 
     def Condition(self):
-        return self.pob[0].fi >=0.97
+        return self.pob[0].fi ==1
 
     def Seleccion(self,Pobl:Poblation,pt:float=0):
         return self.Torneo(Pobl,pt)

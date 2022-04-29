@@ -1,21 +1,30 @@
 from Contenedor import Bin
-from DataLecture import PossiblePositions
 import numpy as np
+def quickSort(arr,low,high):
+    def partition(arr,low,high):
+        i = (low-1)
+        pivot = arr[high]
+        for j in np.arange(low,high):
+            cond3 =  arr[j][0] == pivot[0] and arr[j][2] == pivot[2] and arr[j][1] < pivot[1]
+            cond1 = arr[j][0] == pivot[0] and arr[j][2] < pivot[2]
+            cond2 = arr[j][0] < pivot[0]
+            if cond1 or cond2 or cond3:
+                i = i+1
+                arr[i], arr[j] = arr[j],arr[i]
+        arr[i-1], arr[high] = arr[high],arr[i-1]
+        return (i+1)
+    if len(arr) == 1:
+        return arr
+    if low < high:
+        pi = partition(arr,low,high)
+        quickSort(arr,low,pi-1)
+        quickSort(arr,pi+1,high)
+
 class ColaP(list):
     def __init__(self):
-        self._visit=list()
         self=list()
     def push(self,punto:list):
-        cad = str(punto[0])+str(punto[1])+str(punto[2])
-        if(cad in self._visit):
-            return
-        self._visit.append(cad)
-        n = self.size()
         self.append(punto)
-    def __swap__(self,i,j):
-        aux = self[i]
-        self[i]=self[j]
-        self[j]=aux
     def pop(self):
         if(self.empty()): return
         del self[0]
@@ -26,17 +35,7 @@ class ColaP(list):
     def empty(self)->bool:
         return len(self)==0
     def Order(self):
-        self.sort(key=lambda x:x[0])
-        n = self.size()
-        for i in range(n):
-            for j in range(0, n-i-1):
-                if( self[j+1][0]==self[j][0] and 
-                   self[j+1][2] < self[j][2]):
-                    self.__swap__(j,j+1)
-                elif ( self[j+1][0]==self[j][0] and 
-                    self[j+1][2] == self[j][2] and
-                     self[j+1][1] < self[j][1]):
-                    self.__swap__(j,j+1)
+        quickSort(self,0,len(self)-1)
 
 def IterateDBLF(item:list,actualPoint:list,bin:Bin):
     if bin.getN() <= 1 :

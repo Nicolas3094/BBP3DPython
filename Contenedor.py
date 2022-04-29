@@ -1,7 +1,4 @@
-from typing import List
 import numpy as np
-
-
 
 class Item:
     def __init__(self,classType=0,dimensions=None, minMaxVertex = None):
@@ -23,19 +20,15 @@ class Bin:
     def __init__(self, dimensiones:list, n:int):
         self._loadedItems = list()
         self.dimensions = dimensiones
-        self.ni = [ 0 for i in range(n)]
         self._loaded_volume = 0
-        self._prevBox:Item = None
         self._n=0
 
     def addBox(self, id:int, pos:list, dimensions:list):
         currentItem = Item(classType=id, minMaxVertex=[pos, np.array(pos)+np.array(dimensions)])
         self._loadedItems.append(currentItem)
         self._loaded_volume += np.prod(dimensions)
-        self.ni[id-1] = 1 
-        self._prevBox = currentItem
         self._n+=1
-
+        
     def getLoadVol(self)->int:
         return self._loaded_volume
     def getBox(self, index:int)->Item:
