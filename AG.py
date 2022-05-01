@@ -2,7 +2,6 @@ from Poblacion import Poblation,Individuo
 from Contenedor import Bin
 import numpy as np
 import random
-import copy
 from Poblacion import Genome
 from PackingH import DBLF
 class AG:
@@ -59,10 +58,8 @@ class AG:
             self._RegistrarDatos__()
             self.CrearGeneracion()
             self.EvaluateFitness(self.pob,contenedor,Data)
-            print(_)
             if self.Condition():
                 break
-            self._gen = _
         
     def EvaluateFitness(self,pobl:Poblation,dimBin,DataSet):
         for individuo in pobl:
@@ -144,6 +141,7 @@ class AG:
                 return i1
             
     def Mutation(self,ind:Individuo, PM:float):
+        ind.fi = None
         r = random.random()
         if r >= PM:
             return
