@@ -1,9 +1,12 @@
+from audioop import reverse
 from Poblacion import Poblation,Individuo
 from Contenedor import Bin
 import numpy as np
 import random
-from Poblacion import Genome
-from PackingH import DBLF
+from  OperatorG import Cruza,Cruza,Mutation
+from heapq import heapify, heappush, heappop
+from queue import PriorityQueue
+
 class AG:
     def __init__(self, pc:float, pt:float, pm:float):
         self._pc = pc #prob cruza
@@ -11,13 +14,13 @@ class AG:
         self._pm = pm #prob de mutacion
         self._DataSet=dict()
         self.pob:Poblation = None
-
+        self.maxVolume= 1
+        
     def __initValues__(self):
         self._gen = 0 
         self.fiBest = list()
         self.fiWorst = list()
         self.Convergencia = list()
-
 
     def _RegistrarDatos__(self):
         self.fiBest.append(self.pob[0].fi)
@@ -28,16 +31,17 @@ class AG:
 
     def Best(self):
         return self.pob[0]
-    
+    def Convergence(self)->float:
+        return (self.Best().fi-self.pob[-1].fi)/(self.Best().fi**2)
     def RandomInitPob(self,N:int , BoxSeq:list, Heuristic:bool=False):
-
         Pob = Poblation(N)
-
         originalInd = [i for i in range(1,len(BoxSeq)+1)]
-
         self._DataSet = dict(zip(originalInd,BoxSeq)) #Data set Global en forma de diccionario, de [1,..n] -> [ p1, p2, ..., pn  ], donde pi = [li wi hi]
         if Heuristic:
             N -= 4
+            self._maxVolume = 0
+            for box in BoxSeq:
+                self._maxVolume += np.prod(box)
             vol = list({k: v for k,v in sorted(self._DataSet.items(),key = lambda v: v[1][0]*v[1][1]*v[1][2])}.keys())
             Pob.CreateInd(code=vol ) #ordena por volumen
             for _ in range(3): #ordena por longitud, ancho y alto
@@ -53,14 +57,60 @@ class AG:
         self.__initValues__()
 
     def train(self,maxGen,contenedor,Data):
+        self._maxVolume/= np.prod(contenedor)
+        if self._maxVolume>1:
+            self._maxVolume=1
         self.EvaluateFitness(self.pob,contenedor,Data)
         for _ in np.arange(maxGen):
             self._RegistrarDatos__()
-            self.CrearGeneracion()
-            self.EvaluateFitness(self.pob,contenedor,Data)
+            self.CrearGeneracion(contenedor,Data)
             if self.Condition():
                 break
-        
+    def train2(self,maxGen,contenedor,Data):
+        self.EvaluateFitness(self.pob,contenedor,Data)
+        for _ in np.arange(maxGen):
+            self._RegistrarDatos__()
+            self.CrearGeneracion2(contenedor,Data)
+            self.pob.poblation = self.pob.poblation[:self.pob.n]
+            if self.Condition() or self.Convergence()<0.01:
+                break
+
+    def CrearGeneracion2(self,dimBin,DataSet):
+        n = random.randint(int(self.pob.n/4),int(self.pob.n/2)) # maximo un cuarto de la mejor poblacion actual pasa a la siguiente , min 2 por elitismo, exento a cruza, los demas pasan a seleccion
+        if n % 2 != 0:
+            n -=1 
+        newPob:list[Individuo] = []
+        while len(newPob)<=n:
+            indx1 = self.Seleccion(self.pob.poblation,self._pt)
+            indx2 = self.Seleccion(self.pob.poblation,self._pt)
+            while indx1 == indx2:
+                indx2 = self.Seleccion(self.pob.poblation,self._pt)
+            rn = random.random()
+            if rn <= self._pc:
+                p1 = self.pob.poblation[indx1]
+                p2 = self.pob.poblation[indx2]
+                h1,h2 = Cruza(p1.genome,p2.genome)
+                Mutation(h1,self._pm)
+                Mutation(h2,self._pm)
+                if h1 in self.pob:
+                    continue
+                if h2 in self.pob:
+                    continue
+                ind1 = Individuo(code=h1)
+                ind2 = Individuo(code=h2)
+                self.EvalIndFit(ind1,dimBin,DataSet)
+                self.EvalIndFit(ind2,dimBin,DataSet)
+                newPob.append(ind1)
+                newPob.append(ind2)
+        self.pob.poblation = self.pob.poblation+newPob
+        self.pob.poblation.sort(key=lambda x: x.fi,reverse=True)
+
+
+    def EvalIndFit(self,ind:Individuo,dimBin,DataSet):
+        bin:Bin = Bin(dimensiones=dimBin, n=len(DataSet))
+        self._packing(bin=bin,itemsToPack=ind.genome, ITEMSDATA=DataSet)
+        ind.fi = bin.getLoadVol()/np.prod(dimBin)
+
     def EvaluateFitness(self,pobl:Poblation,dimBin,DataSet):
         for individuo in pobl:
             if individuo.fi is None:
@@ -68,19 +118,13 @@ class AG:
                 self._packing(bin=bin,itemsToPack=individuo.genome, ITEMSDATA=DataSet)
                 individuo.fi = bin.getLoadVol()/np.prod(dimBin)
         pobl.poblation.sort(key= lambda x : x.fi,reverse=True)
-
-    def CrearGeneracion(self):
-        n = random.randint(2,int(self.pob.n/2)) # maximo un cuarto de la mejor poblacion actual pasa a la siguiente , min 2 por elitismo, exento a cruza, los demas pasan a seleccion
-        elite = 0
-        worstPob:Poblation = Poblation(n)
-        worstPob.poblation = self.pob.poblation[n:]
-        nexPob:Poblation = Poblation(self.pob.n)
-        nexPob.poblation = self.pob.poblation[:n]
-        lim = self.pob.n-n
-        while elite <  lim:
-            if len(worstPob.poblation)==1:
-                nexPob.Add(worstPob[0])
-                break
+    def CrearGeneracion(self,dimbin,dataset):
+        n = random.randint(2,int(self.pob.n/4)) # maximo un cuarto de la mejor poblacion actual pasa a la siguiente , min 2 por elitismo, exento a cruza, los demas pasan a seleccion
+        if n % 2 != 0:
+            n -=1 
+        worstPob:list[Individuo] = self.pob[n:]
+        del self.pob.poblation[n:]
+        while len(worstPob)!=0:
             indx1 = self.Seleccion(worstPob,self._pt)
             indx2 = self.Seleccion(worstPob,self._pt)
             while indx1 == indx2:
@@ -89,41 +133,31 @@ class AG:
             p2:Individuo = worstPob[indx2]
             rn = random.random()
             if rn <= self._pc:
-                h1,h2 = self.Cruza(p1,p2)
-                if elite < lim:
-                    self.Mutation(h1,self._pm)
-                    nexPob.Add(h1)
-                    elite +=1
-                if elite < lim:
-                    self.Mutation(h2,self._pm)
-                    nexPob.Add(h2)
-                    elite +=1
-                else:
-                    break
+                h1,h2 = Cruza(p1.genome,p2.genome)
+                probAdap = self._pm
+                Mutation(h1,probAdap)
+                Mutation(h2,probAdap)
+                ind1 = Individuo(code=h1)
+                ind2 = Individuo(code=h2)
+                self.EvalIndFit(ind1,dimbin,dataset)
+                self.EvalIndFit(ind2,dimbin,dataset)
+                self.pob.Add(ind1)
+                self.pob.Add(ind2)
             else:
-                if elite < lim:
-                    nexPob.Add(p1)
-                    elite +=1
-                if elite < lim:
-                    nexPob.Add(p2)
-                    elite +=1
-                else:
-                    break
-            worstPob.DeleteInd(indx1)
+                self.pob.Add(p1)
+                self.pob.Add(p2)
+            del worstPob[indx1]
             if indx1 > indx2:
-                worstPob.DeleteInd(indx2)
+                del worstPob[indx2]
             else:
-                worstPob.DeleteInd(indx2-1)
-        self.pob.poblation = nexPob.poblation
-
-    def Condition(self):
-        return self.pob[0].fi ==1
-
-    def Seleccion(self,Pobl:Poblation,pt:float=0):
+                del worstPob[indx2-1]
+        self.pob.poblation.sort(key=lambda x: x.fi,reverse=True)
+    def Condition(self)->bool:
+        return self.pob[0].fi == self.maxVolume
+    def Seleccion(self,Pobl:list[Individuo],pt:float=0)->int:
         return self.Torneo(Pobl,pt)
-    
-    def Torneo(self,Pob:Poblation,pt:float=0.85):
-        n = len(Pob.poblation)
+    def Torneo(self,Pob:list[Individuo],pt:float=0.85)->int:
+        n = len(Pob)
         i1 = random.randrange(0, n)
         i2 = random.randrange(0, n) 
         while i1 == i2:
@@ -139,43 +173,3 @@ class AG:
                 return i2
             else:
                 return i1
-            
-    def Mutation(self,ind:Individuo, PM:float):
-        ind.fi = None
-        r = random.random()
-        if r >= PM:
-            return
-        n = len(ind.genome)
-        i= random.randrange(0,int(n/2))
-        j= random.randrange(i+1,n)
-        aux_code = ind.genome[0:i]+ind.genome[i:j][::-1]+ind.genome[j:n]
-        ind.genome = list()
-        ind.genome = aux_code
-        
-    def OX(self,P1:list,P2:list,i:int,j:int)->Genome:
-        n = len(P1)
-        h1 = [None]*n
-        h1[i:j]=P1[i:j]
-        for k in np.arange(j,len(P1)):
-            for l in np.arange(0,len(P2)):
-                if(P2[l] not in h1):
-                    h1[k] = P2[l]
-                    break
-        for k in np.arange(0,i):
-            for l in np.arange(0,len(P2)):
-                if(P2[l] not in h1):
-                    h1[k] = P2[l]
-                    break 
-        return h1
-    
-    def Cruza(self,P1:Individuo,P2:Individuo):
-
-        n = len(P1.genome)
-        i= random.randrange(3,int(n/2))
-        j= random.randrange(i+1,n)
-
-        h1 = Individuo(code=self.OX(P1.genome,P2.genome,i,j))
-
-        h2 = Individuo(code=self.OX(P2.genome,P1.genome,i,j))
-        
-        return (h1,h2)

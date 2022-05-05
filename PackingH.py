@@ -1,5 +1,6 @@
 from Contenedor import Bin
 import numpy as np
+from Pqueue import PQVector
 def bubbleSort(arr:list[list[int]])->None:
     n = len(arr)
     for j in np.arange(n-1):
@@ -24,31 +25,37 @@ def IterateDBLF(item:list,actualPoint:list,bin:Bin):
         actualPoint[_]+=1
 
 def DBLF(bin:Bin, itemsToPack:list,ITEMSDATA:list):
-    cola = [[0,0,0]]
+    points = [[0,0,0]]
+    visited = []
     for itemId in itemsToPack:
-        for j,actualPoint in enumerate(cola):
+        for j in range(len(points)):
             itemV = ITEMSDATA[itemId-1]
+            actualPoint = points[j]
             if bin.Placement( PosiblePoint= np.array(actualPoint)+ np.array(itemV) ):
                 if not bin.Overlap(pos=actualPoint, box =  itemV):
                     IterateDBLF(itemV,actualPoint,bin)
                     bin.addBox(id=itemId, pos = actualPoint, dimensions= itemV)
-                    cola.pop(j)
+                    points.pop(j)
                     for k in np.arange(3):
                         if actualPoint[k] + itemV[k] < bin.dimensions[k]:
                             actualPoint[k] += itemV[k]
-                            cola.append(actualPoint.copy())
+                            if actualPoint not in visited:
+                                points.append(actualPoint.copy())
+                            else:
+                                visited.append(actualPoint)
                             actualPoint[k] -= itemV[k]
-                    bubbleSort(cola)
+                    bubbleSort(points)
                     break        
     #path = "C:/Users/nicoo/My project/Assets/points.json"
     #PossiblePositions(path=path,positions=cola)
 
 def DBLF2(bin:Bin, itemsToPack:list, ITEMSDATA:list):
     items = itemsToPack.copy()
-    pointsQ = [[0,0,0]]
-    while len(items) != 0 and len(pointsQ)!=0:
-        point = pointsQ[0]
-        pointsQ.pop(0)
+    pointsQ = PQVector([0,2,1]) #orden x,z,y 
+    pointsQ.push([0,0,0])
+    visited = []
+    while len(items) != 0 and not pointsQ.empty():
+        point = pointsQ.pop()
         for i,itemId in enumerate(items):
             itemV = ITEMSDATA[itemId-1]
             if bin.Placement( PosiblePoint= np.array(point)+ np.array(itemV) ):
@@ -58,9 +65,11 @@ def DBLF2(bin:Bin, itemsToPack:list, ITEMSDATA:list):
                     for k in np.arange(3):
                         if point[k] + itemV[k] < bin.dimensions[k]:
                             point[k] += itemV[k]
-                            pointsQ.append(point.copy())
+                            if point not in visited:
+                                pointsQ.push(point.copy())
+                            else:
+                                visited.append(point)
                             point[k] -= itemV[k]
-                    bubbleSort(pointsQ)
                     items.pop(i)
                     break
     #path = "C:/Users/nicoo/My project/Assets/points.json"

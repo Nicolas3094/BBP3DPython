@@ -1,5 +1,5 @@
 import numpy as np
-
+import random 
 class Item:
     def __init__(self,classType=0,dimensions=None, minMaxVertex = None):
         self.id = classType
@@ -17,6 +17,7 @@ class Item:
         self.MaxV = self.dimensions + self.MinV
 
 class Bin:
+
     def __init__(self, dimensiones:list, n:int):
         self._loadedItems = list()
         self.dimensions = dimensiones
@@ -60,3 +61,22 @@ class Bin:
             if Amin[i] >= Bmax[i] or Amax[i] <= Bmin[i]:
                 return False
         return True
+
+def RandomPoblation(N:int , BoxSeq:list, Heuristic:bool=False)->list[list[int]]:
+        poblation = list()
+        originalInd = [i for i in range(1,len(BoxSeq)+1)]
+        _DataSet = dict(zip(originalInd,BoxSeq)) #Data set Global en forma de diccionario, de [1,..n] -> [ p1, p2, ..., pn  ], donde pi = [li wi hi]
+        if Heuristic:
+            N -= 4
+            vol = list({k: v for k,v in sorted(_DataSet, reverse=True,key = lambda v: v[1][0]*v[1][1]*v[1][2])}.keys())
+            poblation.append(vol)
+            for _ in range(3): #ordena por longitud, ancho y alto
+                di = list({k: v for k,v in sorted(_DataSet.items(),reverse=True,key = lambda v: v[1][_])}.keys())
+                poblation.append(di)
+        for _ in range(N):
+            random.shuffle(originalInd)
+            while originalInd in poblation:
+                random.shuffle(originalInd)
+            copyInd = originalInd.copy()
+            poblation.append(copyInd)
+        return poblation
