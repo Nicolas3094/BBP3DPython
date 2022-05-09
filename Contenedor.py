@@ -1,5 +1,6 @@
 import numpy as np
 import random 
+
 class Item:
     def __init__(self,classType=0,dimensions=None, minMaxVertex = None):
         self.id = classType
@@ -17,19 +18,16 @@ class Item:
         self.MaxV = self.dimensions + self.MinV
 
 class Bin:
-
     def __init__(self, dimensiones:list, n:int):
         self._loadedItems = list()
         self.dimensions = dimensiones
         self._loaded_volume = 0
         self._n=0
-
     def addBox(self, id:int, pos:list, dimensions:list):
         currentItem = Item(classType=id, minMaxVertex=[pos, np.array(pos)+np.array(dimensions)])
         self._loadedItems.append(currentItem)
         self._loaded_volume += np.prod(dimensions)
         self._n+=1
-        
     def getLoadVol(self)->int:
         return self._loaded_volume
     def getBox(self, index:int)->Item:
@@ -42,10 +40,8 @@ class Bin:
         self._loadedItems.clear()
     def getN(self):
         return self._n
-
     def Placement(self, PosiblePoint:list)->bool:
         return PosiblePoint[2] <= self.dimensions[2] and PosiblePoint[1] <=  self.dimensions[1] and PosiblePoint[0] <= self.dimensions[0] 
-        
     def Overlap(self,pos:list, box:list )->bool:
         Amin = np.array(pos)
         Amax = Amin + np.array(box)
@@ -55,7 +51,6 @@ class Bin:
             if self.ABIntersect(Amax,Amin,Bmax,Bmin):
                 return True
         return False
-    
     def ABIntersect(self, Amax,Amin,Bmax,Bmin)->bool:
         for i in range(3):
             if Amin[i] >= Bmax[i] or Amax[i] <= Bmin[i]:

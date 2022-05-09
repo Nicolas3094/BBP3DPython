@@ -6,6 +6,7 @@ import random
 from  OperatorG import Cruza,Cruza,Mutation
 from heapq import heapify, heappush, heappop
 from queue import PriorityQueue
+from NumfaFun import CreatePoblation,NumDBLF,create_Bin
 
 class AG:
     def __init__(self, pc:float, pt:float, pm:float):
@@ -14,7 +15,7 @@ class AG:
         self._pm = pm #prob de mutacion
         self._DataSet=dict()
         self.pob:Poblation = None
-        self.maxVolume= 1
+        self._maxFi= 1
         
     def __initValues__(self):
         self._gen = 0 
@@ -39,9 +40,9 @@ class AG:
         self._DataSet = dict(zip(originalInd,BoxSeq)) #Data set Global en forma de diccionario, de [1,..n] -> [ p1, p2, ..., pn  ], donde pi = [li wi hi]
         if Heuristic:
             N -= 4
-            self._maxVolume = 0
+            self._maxFi = 0
             for box in BoxSeq:
-                self._maxVolume += np.prod(box)
+                self._maxFi += np.prod(box)
             vol = list({k: v for k,v in sorted(self._DataSet.items(),key = lambda v: v[1][0]*v[1][1]*v[1][2])}.keys())
             Pob.CreateInd(code=vol ) #ordena por volumen
             for _ in range(3): #ordena por longitud, ancho y alto
@@ -57,26 +58,31 @@ class AG:
         self.__initValues__()
 
     def train(self,maxGen,contenedor,Data):
-        self._maxVolume/= np.prod(contenedor)
-        if self._maxVolume>1:
-            self._maxVolume=1
+        if self._maxFi >=  np.prod(contenedor):
+            self._maxFi = len(Data)
         self.EvaluateFitness(self.pob,contenedor,Data)
+        self.pob.poblation.sort(key=lambda x: x.fi,reverse=True)
         for _ in np.arange(maxGen):
             self._RegistrarDatos__()
             self.CrearGeneracion(contenedor,Data)
             if self.Condition():
                 break
     def train2(self,maxGen,contenedor,Data):
+        if self._maxFi >=  np.prod(contenedor):
+            self._maxFi = len(Data)
         self.EvaluateFitness(self.pob,contenedor,Data)
+        lp = 5
         for _ in np.arange(maxGen):
+           # if _ % lp == 0:
+            #    tmp= self.Convergence()
             self._RegistrarDatos__()
             self.CrearGeneracion2(contenedor,Data)
             self.pob.poblation = self.pob.poblation[:self.pob.n]
-            if self.Condition() or self.Convergence()<0.01:
+            if self.Condition() or self.Convergence()<0.001 :
                 break
 
     def CrearGeneracion2(self,dimBin,DataSet):
-        n = random.randint(int(self.pob.n/4),int(self.pob.n/2)) # maximo un cuarto de la mejor poblacion actual pasa a la siguiente , min 2 por elitismo, exento a cruza, los demas pasan a seleccion
+        n = random.randint(int(self.pob.n/4),int(self.pob.n)) # maximo un cuarto de la mejor poblacion actual pasa a la siguiente , min 2 por elitismo, exento a cruza, los demas pasan a seleccion
         if n % 2 != 0:
             n -=1 
         newPob:list[Individuo] = []
@@ -104,20 +110,16 @@ class AG:
                 newPob.append(ind2)
         self.pob.poblation = self.pob.poblation+newPob
         self.pob.poblation.sort(key=lambda x: x.fi,reverse=True)
-
-
+        
     def EvalIndFit(self,ind:Individuo,dimBin,DataSet):
         bin:Bin = Bin(dimensiones=dimBin, n=len(DataSet))
         self._packing(bin=bin,itemsToPack=ind.genome, ITEMSDATA=DataSet)
-        ind.fi = bin.getLoadVol()/np.prod(dimBin)
+        ind.fi = (bin.getLoadVol()/np.prod(dimBin))*bin.getN()
 
     def EvaluateFitness(self,pobl:Poblation,dimBin,DataSet):
         for individuo in pobl:
             if individuo.fi is None:
-                bin:Bin = Bin(dimensiones=dimBin, n=len(DataSet))
-                self._packing(bin=bin,itemsToPack=individuo.genome, ITEMSDATA=DataSet)
-                individuo.fi = bin.getLoadVol()/np.prod(dimBin)
-        pobl.poblation.sort(key= lambda x : x.fi,reverse=True)
+                self.EvalIndFit(individuo,dimBin,DataSet)
     def CrearGeneracion(self,dimbin,dataset):
         n = random.randint(2,int(self.pob.n/4)) # maximo un cuarto de la mejor poblacion actual pasa a la siguiente , min 2 por elitismo, exento a cruza, los demas pasan a seleccion
         if n % 2 != 0:
@@ -153,7 +155,7 @@ class AG:
                 del worstPob[indx2-1]
         self.pob.poblation.sort(key=lambda x: x.fi,reverse=True)
     def Condition(self)->bool:
-        return self.pob[0].fi == self.maxVolume
+        return self.pob[0].fi == self._maxFi
     def Seleccion(self,Pobl:list[Individuo],pt:float=0)->int:
         return self.Torneo(Pobl,pt)
     def Torneo(self,Pob:list[Individuo],pt:float=0.85)->int:
