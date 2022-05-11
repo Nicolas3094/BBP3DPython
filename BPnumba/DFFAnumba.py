@@ -39,8 +39,7 @@ def InstanceFFn(pob:List[List[int]],boxesData:List[List[int]], container:List[in
     return lst
 
 @njit(nogil=True) #n2 
-def BettaStep(f1:Ind,f2:Ind,gamma:float):
-    hamming = Hamming(f1.genome,f2.genome)
+def BettaStep(f1:Ind,f2:Ind,gamma:float,hamming:float):
     n = len(f1.genome)
     noneNumber = n
     res = [-1 for i in np.arange(n) ]
@@ -91,9 +90,8 @@ def AlphaStep(ff:Ind,alpha:int):
     ff.genome = NumbaList(pos)
 
 @njit(nogil=True)
-def LightInt(f1:Ind,f2:Ind,gamma:float):
-    dist = Hamming(f1.genome,f2.genome)
-    return f1[0]/(1+gamma*(dist**2))
+def LightInt(f1:Ind,gamma:float,dist:float):
+    return f1.fi/(1+gamma*(dist**2))
 @njit(nogil=True)
 def RandomMov(firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int]):
     AlphaStep(firefly,alpha) # n2
@@ -107,10 +105,11 @@ def DFFtrain(Maxitr:int,fireflyPob:List[Ind],gamma:float,datos:List[List[int]],c
         alpha = np.floor(n-((_)/Maxitr)*(n))
         for i in np.arange(fnum-1):
             for j in prange(i+1,fnum):
-                Ii = LightInt(fireflyPob[i],fireflyPob[j],gamma)
-                Ij = LightInt(fireflyPob[j],fireflyPob[i],gamma) 
+                dist = Hamming(fireflyPob[j].genome,fireflyPob[0].genome)
+                Ii = LightInt(fireflyPob[i],gamma,dist)
+                Ij = LightInt(fireflyPob[j],gamma,dist) 
                 if Ij < Ii:
-                    fireflyPob[j].genome= NumbaList( BettaStep( fireflyPob[j], fireflyPob[i], gamma ))
+                    fireflyPob[j].genome= NumbaList( BettaStep( fireflyPob[j], fireflyPob[i], gamma, dist ))
                     RandomMov(fireflyPob[j],alpha,datos,contenedor)
         RandomMov(fireflyPob[0],alpha,datos,contenedor)                   
         fireflyPob.sort(key=lambda x:x.fi,reverse=True)
