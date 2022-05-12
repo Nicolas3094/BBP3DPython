@@ -8,7 +8,7 @@ from collections import OrderedDict
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from BPnumba.GOnumba import InverseMutation
-from BPnumba.NumFun import create_Bin,NumDBLF
+from BPnumba.NumFun import create_Bin,NumDBLF,CreatePoblation
 
 sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
@@ -64,6 +64,7 @@ def Tournament(Pob:List[Ind],pt:float=0.85)->int:
             return i2
         else:
             return i1
+
 @njit(nogil=True)
 def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:
     n = len(P1)
@@ -184,6 +185,7 @@ def CreateNexGen(GA:NAG,pob:List[Ind],datos,contenedor):
 def TrainAG(maxItr:int,pob:List[Ind],pt,pc,pr,datos,contenedor):
     ag=create_AG(pt,pr,pc)
     max_pop = len(pob)
+
     pob.sort(key=lambda  ind : ind.fi, reverse=True)
     for _ in np.arange(maxItr):
         CreateNexGen(ag,pob,datos,contenedor)
@@ -191,3 +193,5 @@ def TrainAG(maxItr:int,pob:List[Ind],pt,pc,pr,datos,contenedor):
         if pob[0].fi == 1 or (pob[0].fi-pob[-1].fi)/(pob[0].fi**2)<0.001:
             break
     return pob[0]
+
+

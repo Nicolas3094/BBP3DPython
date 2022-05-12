@@ -20,6 +20,9 @@ def make_linked_node(data):
     return Nodo(data, None)
 node_type.define(Nodo.class_type.instance_type)
 
+
+
+
 listP_type = deferred_type()
 specP = OrderedDict()
 specP['__order'] = types.ListType(types.int64)
@@ -94,10 +97,7 @@ class PQVector:
 def CreatePriorityQueue(order):
     return PQVector(order)
 listP_type.define(PQVector.class_type.instance_type)
-
-if __name__ == "__main__":
-    n = make_linked_node(NumbaList(-1,-1,-1))
-    p = CreatePriorityQueue(NumbaList([0,1,1]))
-    p.push(NumbaList([0,0,0]))
-    p.pop()
-    
+listPQ_type = deferred_type()
+specPQ = OrderedDict()
+specPQ['__n'] = types.int64
+specPQ['__top'] = node_type
