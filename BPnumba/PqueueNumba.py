@@ -20,9 +20,6 @@ def make_linked_node(data):
     return Nodo(data, None)
 node_type.define(Nodo.class_type.instance_type)
 
-
-
-
 listP_type = deferred_type()
 specP = OrderedDict()
 specP['__order'] = types.ListType(types.int64)

@@ -5,24 +5,6 @@ from numba.typed import List as NumbaList
 from typing import List
 from collections import OrderedDict
 from BPnumba.PqueueNumba import PQVector
-import random
-@njit
-def CreatePermutation(ls1:List[int]):
-    repeated = []
-    while len(repeated)!=len(ls1):
-        randNum = random.randint(1,len(ls1))
-        if randNum not in repeated:
-            repeated.append(randNum)
-    return repeated
-@njit
-def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
-    poblation = []
-    for _ in np.arange(num):
-        pi =  CreatePermutation(ls2)
-        if pi not in poblation:
-            poblation.append(pi)
-    return poblation
-
 
 Bin_type = deferred_type()
 specB = OrderedDict()

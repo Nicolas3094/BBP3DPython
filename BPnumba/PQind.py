@@ -1,10 +1,7 @@
-from cmath import pi
 from numba import types,njit,deferred_type, optional
 from numba.experimental import jitclass
 from collections import OrderedDict
-
 from sqlalchemy import null
-from sympy import Q, preview
 from BPnumba.NumAG import ind_type,Ind
 import numpy as np
 from numba.typed import List as NumbaList
@@ -29,8 +26,7 @@ nodeInd_type.define(GNodo.class_type.instance_type)
 listPQ_type = deferred_type()
 specPQ = OrderedDict()
 specPQ['__n'] = types.int64
-specPQ['__top'] = optional(nodeInd_type)
-specPQ['__back'] = optional(nodeInd_type)
+specPQ['__top'] = nodeInd_type
 specPQ['__maxN'] = types.int64
 specPQ['__maxFi'] = types.float64
 specPQ['__minFi'] = types.float64
@@ -42,19 +38,40 @@ class GPQueue:
         self.__maxN = fixedNum
         self.__maxFi = 0
         self.__minFi = 1
-        self.__top =None
-        self.__back = None
+        ind = Ind(NumbaList([-1]))
+        self.__top = GNodo(ind)
         
     def push(self, ind:Ind )->None:
-        if self.__back is None:
-            self.__top= make_linked_Gnode(ind,None,None)
-            self.__back =self.__top
-        else:
-            self.__back.Rnode=make_linked_Gnode(ind,None,None)
-            self.__back.Rnode.Lnode=self.__back
-            self.__back = self.__back.Rnode
+        if self.empty():
+            self.__top= GNodo(ind)
+            self.__n+=1
+            return 
+        if self.__maxN == self.__n:
+            if ind.fi < self.__minFi:
+                return
+            self.popBack()
+        if self.__minFi > ind.fi:
+            self.__minFi = ind.fi
+        if self.__maxFi < ind.fi:
+            self.__maxFi = ind.fi
+        tmp:GNodo = GNodo(ind)
+        top:Ind=self.__top.data
+        if  ind.fi > top.fi:
+            tmp.Rnode = self.__top
+            self.__top=tmp
+            self.__n+=1
+            return
+        q:GNodo = self.__top
+        qprev = q
+        while q.Rnode is not None:
+            qprev = q
+            q = q.Rnode
+            if ind.fi >= q.data.fi:
+                q=qprev
+                break
+        tmp.Rnode=q.Rnode 
+        q.Rnode = tmp
         self.__n+=1
-        
     def Print(self):
         top = self.__top
         while top is not None:
@@ -74,8 +91,7 @@ class GPQueue:
             self.__n-=1
     def popBack(self):
         self[self.__n-2].Rnode=None
-        self.__n-=1
-        
+        self.__n-=1 
     def TopNode(self)->GNodo:
         return self.__top
     def top(self)->Ind:
@@ -102,8 +118,8 @@ class GPQueue:
                 return q
             q=q.Rnode
             n+=1
-@njit()
-def CreateGenPriorityQueue(maxNum):
-    return GPQueue(maxNum)
+@njit
+def CreateGenPriorityQueue(order):
+    return GPQueue(order)
 listPQ_type.define(GPQueue.class_type.instance_type)
 listPQ_type = deferred_type()

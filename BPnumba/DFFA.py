@@ -29,14 +29,6 @@ ranMov_type.define(DRandMovement.class_type.instance_type)
 def instanceRanMov():
     return DRandMovement()
 
-@njit(nogil=True)
-def InstanceFFn(pob:List[List[int]],boxesData:List[List[int]], container:List[int]):
-    lst = []
-    for i in np.arange(len(pob)):
-        ff = create_intidivual(NumbaList(pob[i]))
-        CalcFi(ff,boxesData,container)
-        lst.append(ff)
-    return lst
 
 @njit(nogil=True) #n2 
 def BettaStep(f1:Ind,f2:Ind,gamma:float,hamming:float):
