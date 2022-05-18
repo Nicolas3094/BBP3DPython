@@ -82,7 +82,23 @@ def Tournament(Pob:List[Ind],pt:float=0.85)->int:
             return i2
         else:
             return i1
-
+@njit
+def RouletteWheel(Pob:List[Ind])->int:
+    pobFi = np.array([ ind.fi  for ind in Pob])
+    totalFi = np.sum(pobFi)
+    pobFi /= totalFi
+    init = np.random.randint(len(pobFi))
+    r = np.random.random()
+    suma = 0
+    i=init
+    while suma < r:
+        suma += pobFi[i]
+        if suma >=r:
+            break
+        if i == len(pobFi)-1:
+            i=-1
+        i+=1
+    return i
 @njit
 def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:
     n = len(P1)
