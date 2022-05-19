@@ -26,9 +26,29 @@ def create_intidivual(data:List[int]):
 
 @njit
 def CreatePermutation(ls1:List[int])->List[int]:
-    perm = ls1.copy()
-    random.shuffle(perm)
-    return perm
+    xmin =ls1[0]
+    xmax= ls1[len(ls1)-1] 
+    visited = [ False for i in np.arange(xmax+1)]
+    newcode = np.zeros(xmax,dtype=np.int64)
+    for i in np.arange(xmax):
+        xj = random.randint(xmin,xmax)
+        if xj == xmin:
+            xj=xmin
+            xmin +=1
+        elif xj== xmax:
+            xj=xmax
+            xmax -=1
+        while visited[xj]:
+            xj = random.randint(xmin,xmax)
+            if xj == xmin:
+                xj=xmin
+                xmin +=1
+            elif xj == xmax:
+                xj=xmax
+                xmax -=1
+        newcode[i] = xj
+        visited[xj]=True
+    return newcode
 @njit
 def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
     poblation = np.zeros(shape=(num, len(ls2)), dtype=np.int64)
@@ -56,7 +76,7 @@ def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[in
     return lst
 
 
-@njit(nogil=True)
+@njit
 def Hamming(f1:List[int],f2:List[int])->float:
     count =0
     for i in np.arange(len(f1)):
@@ -126,7 +146,6 @@ def InverseMutation(gen:List[int],i,j)->None:
     tmp =gen.copy()
     for k in np.arange(i,j+1):
         gen[k] = tmp[j-k+i]
-
 @njit
 def RandomSwapSeq(gen:List[int],index:int):
     cp = gen.copy()

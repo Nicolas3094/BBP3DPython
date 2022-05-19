@@ -1,12 +1,14 @@
 import numpy as np
 import random
-from BPnumba.NumAG import CalcFi,Hamming
+from BPnumba.GeneticOperators import CreatePoblation, InstancePob,Hamming
+from BPnumba.NumAG import CalcFi
+
 from numba.typed import List as NumbaList
-from numba import types, prange,njit,deferred_type
+from numba import prange,njit,deferred_type,types,optional
 from typing import List
 from collections import OrderedDict
 from numba.experimental import jitclass
-from BPnumba.NumAG import Ind,create_intidivual
+from BPnumba.GeneticOperators import Ind, ind_type
 @jitclass
 class DRandMovement(object):
     def __init__(self):
@@ -28,8 +30,6 @@ ranMov_type.define(DRandMovement.class_type.instance_type)
 @njit
 def instanceRanMov():
     return DRandMovement()
-
-
 @njit(nogil=True) #n2 
 def BettaStep(f1:Ind,f2:Ind,gamma:float,hamming:float):
     n = len(f1.genome)
@@ -58,13 +58,13 @@ def BettaStep(f1:Ind,f2:Ind,gamma:float,hamming:float):
                         visited[f1.genome[j]]=True
                         break
     return res
-@njit(nogil=True)
+@njit
 def AlphaRandMov(firefly:Ind,alpha:int):
     movement = instanceRanMov()
     newFFs = movement.AlphaFF(firefly,alpha)
     return newFFs
 
-@njit(nogil=True)
+@njit
 def AlphaStep(ff:Ind,alpha:int):
     pos = ff.genome.copy()
     n = len(pos)
@@ -84,6 +84,7 @@ def AlphaStep(ff:Ind,alpha:int):
 @njit(nogil=True)
 def LightInt(f1:Ind,gamma:float,dist:float):
     return f1.fi/(1+gamma*(dist**2))
+
 @njit(nogil=True)
 def RandomMov(firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int]):
     AlphaStep(firefly,alpha) # n2
@@ -97,7 +98,7 @@ def DFFtrain(Maxitr:int,fireflyPob:List[Ind],gamma:float,datos:List[List[int]],c
         alpha = np.floor(n-((_)/Maxitr)*(n))
         for i in np.arange(fnum-1):
             for j in prange(i+1,fnum):
-                dist = Hamming(fireflyPob[j].genome,fireflyPob[0].genome)
+                dist = Hamming(fireflyPob[j].genome,fireflyPob[i].genome)
                 Ii = LightInt(fireflyPob[i],gamma,dist)
                 Ij = LightInt(fireflyPob[j],gamma,dist) 
                 if Ij < Ii:
@@ -105,4 +106,52 @@ def DFFtrain(Maxitr:int,fireflyPob:List[Ind],gamma:float,datos:List[List[int]],c
                     RandomMov(fireflyPob[j],alpha,datos,contenedor)
         RandomMov(fireflyPob[0],alpha,datos,contenedor)                   
         fireflyPob.sort(key=lambda x:x.fi,reverse=True)
+        if fireflyPob[0].fi ==1:
+            return fireflyPob[0]
     return fireflyPob[0]
+@njit(parallel=True)
+def InteractFFA(i,fireflyPob:List[Ind],gamma:float,alpha:int,datos:List[List[int]],contenedor:List[int]):
+    fnum = len(fireflyPob)
+    for j in prange(i+1,fnum):
+        dist = Hamming(NumbaList(fireflyPob[j].genome),NumbaList(fireflyPob[i].genome))
+        Ii = LightInt(fireflyPob[i],gamma,dist)
+        Ij = LightInt(fireflyPob[j],gamma,dist) 
+        if Ij < Ii:
+            fireflyPob[j].genome= NumbaList( BettaStep( fireflyPob[j], fireflyPob[i], gamma, dist ))
+            RandomMov(fireflyPob[j],alpha,datos,contenedor)
+
+DFFA_type = deferred_type()
+specF = OrderedDict()
+specF['pop_num'] = types.int64
+specF['BestInd'] = ind_type
+specF['bestfi'] = types.ListType(types.float64)
+specF['gamma'] = types.float64
+
+@jitclass(specF)
+class DFFA:
+    def __init__(self,pop_num:int=0,gamma:float=0):
+        self.pop_num=pop_num
+        self.gamma = gamma
+        self.BestInd = Ind(NumbaList([1]))
+        self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
+    def Train(self,Maxitr:int,fireflyPob:List[Ind],datos:List[List[int]],contenedor:List[int]):
+        fnum = len(fireflyPob)
+        n = len(datos)
+        rd :List[float]= []
+        for _ in np.arange(Maxitr):
+            alpha = np.floor(n-((_)/Maxitr)*(n))
+            for i in np.arange(fnum-1):
+                InteractFFA(i,fireflyPob,self.gamma,alpha,datos,contenedor)
+            rd.append(fireflyPob[0].fi)
+            if fireflyPob[0].fi ==1:
+                self.BestInd=fireflyPob[0]
+                break
+            RandomMov(fireflyPob[0],alpha,datos,contenedor)                   
+            fireflyPob.sort(key=lambda x:x.fi,reverse=True)
+        rd = np.array(rd,dtype=np.float64)
+        self.bestfi = NumbaList(rd)
+
+DFFA_type.define(DFFA.class_type.instance_type)
+@njit 
+def createDFFA(pop_num:int,gamma:float=0):
+    return DFFA(pop_num,gamma)

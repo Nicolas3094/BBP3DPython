@@ -74,6 +74,9 @@ class PQVector:
     def pop(self)->None:
         if not self.empty():
             tmp = self.__top
+            if self.size()==1:
+                self.__n=0
+                return
             self.__top = tmp.next
             self.__n-=1
 

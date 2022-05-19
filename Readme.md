@@ -31,7 +31,8 @@ An in-depth paragraph about your project and overview of use.
 * How to run the program
 * Step-by-step bullets
 ```
-import numpy as np
+conda install numba 
+pip install numba
 
 ```
 

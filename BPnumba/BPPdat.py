@@ -39,6 +39,7 @@ class Bin:
 @njit
 def create_Bin(dimensions):
     return Bin(dimensions)
+    
 Bin_type.define(Bin.class_type.instance_type)
 
 @njit#(boolean(int64[:],int64[:]),nogil=True)
