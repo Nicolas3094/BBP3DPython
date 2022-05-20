@@ -1,7 +1,7 @@
 import numpy as np
 import random
 from numba.typed import List as NumbaList
-from numba import types, prange,njit,deferred_type,typed
+from numba import types, prange,njit,deferred_type,typed,from_dtype
 from typing import List
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList
@@ -12,17 +12,28 @@ sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
 sepecInd['genome'] = types.ListType(types.int64)
 sepecInd['load'] = types.int64
+sepecInd['BinBoxes'] = types.ListType(types.int64)
+sepecInd['codeSolution'] =  types.string
 @jitclass(sepecInd)
 class Ind:
     def __init__(self,genome:List[int] ):
-         self.fi = 0
+         self.fi:float = 0
          self.genome = genome
          self.load = 0
+         self.BinBoxes = NumbaList(np.array([0],dtype=np.int64))
+         self.codeSolution = ''
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
 @njit(nogil=True)
-def create_intidivual(data:List[int]):
-    return Ind(data)
+def create_intidivual(gen:List[int]):
+    return Ind(gen)
+
+@njit 
+def CodeSolution(idLoaded:List[int])->types.unicode_type:
+    st = "|"
+    for i in np.arange(len(idLoaded)):
+        st += str(idLoaded[i])+"|"
+    return st
 
 @njit
 def CreatePermutation(ls1:List[int])->List[int]:
@@ -65,6 +76,7 @@ def CalcFi(ind:Ind, boxesData:List[List[int]], container:List[int]):
     resp = bin.getLoadVol()/(container[0]*container[1]*container[2])
     ind.load=bin.getN()
     ind.fi = resp
+    ind.codeSolution = CodeSolution(bin.getBoxes())
 
 @njit(parallel=True)
 def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[int])->List[Ind]:

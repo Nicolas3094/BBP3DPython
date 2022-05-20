@@ -40,7 +40,7 @@ class NAG:
     def NextGen(self,pob:List[Ind],datos,contenedor):
         n = len(pob)
         k = random.randint(int(n/4),n) #numero de individuos intentar por crear por pares
-        existedPob = [ind.genome for ind in pob]
+        existedPob = [ind.codeSolution for ind in pob]
         if k % 2 != 0:
             k -=1 
         for _ in np.arange(k):
@@ -53,16 +53,16 @@ class NAG:
                 rp = random.random()
                 if self._prMut<=rp:
                     h1 = self.Crossover(pob[id1],pob[id2])
-                    h2 = self.Crossover(pob[id2],pob[id1])                  
-                    if NotRepeated(h1,existedPob):
-                        self.Mutation(NumbaList(h1))
-                        ind1 = create_intidivual(NumbaList(h1))
-                        CalcFi(ind1,NumbaList(datos),NumbaList(contenedor))
+                    h2 = self.Crossover(pob[id2],pob[id1])  
+                    self.Mutation(NumbaList(h1))
+                    ind1 = create_intidivual(NumbaList(h1))
+                    CalcFi(ind1,NumbaList(datos),NumbaList(contenedor))
+                    self.Mutation(NumbaList(h2))
+                    ind2 = create_intidivual(NumbaList(h2))
+                    CalcFi(ind2,NumbaList(datos),NumbaList(contenedor))
+                    if NotRepeated(ind1.codeSolution,existedPob):
                         pob.append(ind1)
-                    if NotRepeated(h2,existedPob):
-                        self.Mutation(NumbaList(h2))
-                        ind2 = create_intidivual(NumbaList(h2))
-                        CalcFi(ind2,NumbaList(datos),NumbaList(contenedor))
+                    if NotRepeated(ind2.codeSolution,existedPob):
                         pob.append(ind2)
             else:
                 if pob[id1].fi > pob[id2].fi:
@@ -88,16 +88,16 @@ class NAG:
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
         return pob[:bestNum]  
 
-@njit(parallel=True)
-def NotRepeated(h1,existedPob):
+@njit
+def NotRepeated(h1:str,existedPob:List[str]):
     foo=True
     for j in prange(len(existedPob)):
-        if Hamming(NumbaList(h1),existedPob[j]) == 0 and foo:
+        if h1 == existedPob[j]:
            return False
     return True
 
 @njit
-def create_AG(ps:float,pm:float,pc:float):
+def createAG(ps:float,pm:float,pc:float):
     return NAG(ps,pm,pc)
 ag_type = deferred_type()
 ag_type.define(NAG.class_type.instance_type)

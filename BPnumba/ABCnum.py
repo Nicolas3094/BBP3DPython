@@ -126,3 +126,7 @@ class DABC:
             ColonyWorker[maxIdex] = CreateUniformRandomSoltion(self.n, datos, contenedor)
             maxFail = 0
             self.fail[maxIdex] = 0
+ABC_type.define(DABC.class_type.instance_type)
+@njit 
+def createDABC(pop_num: int, n: int):
+    return DABC(pop_num,n)

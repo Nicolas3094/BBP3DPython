@@ -148,6 +148,7 @@ class DFFA:
                 break
             RandomMov(fireflyPob[0],alpha,datos,contenedor)                   
             fireflyPob.sort(key=lambda x:x.fi,reverse=True)
+        self.BestInd=fireflyPob[0]
         rd = np.array(rd,dtype=np.float64)
         self.bestfi = NumbaList(rd)
 
