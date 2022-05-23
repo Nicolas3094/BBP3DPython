@@ -45,7 +45,7 @@ specABC['pop_num'] = types.int64
 specABC['n'] = types.int64
 specABC['BestInd'] = ind_type
 specABC['Limit'] = types.int64
-specABC['fail'] = types.ListType(types.int64)
+specABC['fail'] = types.ListType(types.ListType(types.int64))
 specABC['bestfi'] = types.ListType(types.float64)
 @jitclass(specABC)
 class DABC:
@@ -54,15 +54,16 @@ class DABC:
         self.n = n #Numero de cajas = max numero eWntero de ID de caja
         self.BestInd = Ind(NumbaList([1]))
         self.Limit = pop_num*n*100
-        fail = np.zeros(pop_num, dtype=np.int64)
-        self.fail = NumbaList(fail)
+        listaL = [ NumbaList([i,0]) for i in np.arange(pop_num)]
+        self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
 
     def Train(self,numItr: int, ColonyWorker: List[Ind], datos:List[List[int]], contenedor:List[int]):
         rd :List[float]= []
         self.pop_num = len(ColonyWorker)
         self.n = len(datos)
-        self.fail = NumbaList(np.zeros(len(ColonyWorker), dtype=np.int64))
+        listaL = [ NumbaList([i,0]) for i in np.arange(self.pop_num)]
+        self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
         self.Limit = self.pop_num*(len(datos))*100
 
@@ -74,8 +75,8 @@ class DABC:
             #Busqueda de mejoras de acuerdo al Limite
             self.ScoutPhase(ColonyWorker,datos,contenedor)
             rd.append(self.BestInd.fi)
-            if self.BestInd.fi == 1:
-                break
+            #if self.BestInd.fi == 1:
+            #    break
         rd = np.array(rd,dtype=np.float64)
         self.bestfi = NumbaList(rd)
         return self.BestInd
@@ -86,9 +87,9 @@ class DABC:
         CalcFi(newBee, datos, contenedor)
         if newBee.fi > ColonyWorker[i].fi:
             ColonyWorker[i] = newBee
-            self.fail[i] =0
+            self.fail[i][1] =0
         else:
-            self.fail[i] -= 1
+            self.fail[i][1] += 1
         if self.BestInd.fi < ColonyWorker[i].fi:
             self.BestInd = ColonyWorker[i]
 
@@ -117,16 +118,12 @@ class DABC:
             j = RouletteWheel(ColonyWorker)
             self.ImproveFlower(j,ColonyWorker,datos,contenedor)
     def ScoutPhase(self,ColonyWorker,datos,contenedor):
-        maxFail=0
-        maxIdex = 0
-        for k in np.arange(len(self.fail)):#puede mejorar busqueda
-            if self.fail[k]>maxFail:
-                maxFail=self.fail[k]
-                maxIdex=k
-        if maxFail >= self.Limit:
-            ColonyWorker[maxIdex] = CreateUniformRandomSoltion(self.n, datos, contenedor)
-            maxFail = 0
-            self.fail[maxIdex] = 0
+        maxFail = self.fail.copy()
+        maxFail.sort(key=lambda x: x[1], reverse=True)
+        if maxFail[0][1] >= self.Limit:
+            print("Make scouting")
+            ColonyWorker[maxFail[0][0]] = CreateUniformRandomSoltion(self.n, datos, contenedor)
+            self.fail[maxFail[0][0]][1] = 0
 ABC_type.define(DABC.class_type.instance_type)
 @njit 
 def createDABC(pop_num: int, n: int):

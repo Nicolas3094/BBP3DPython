@@ -93,10 +93,10 @@ def CalcFi(ind:Ind, boxesData:List[List[int]], container:List[int]):
     ind.fi = resp
     ind.codeSolution = CodeSolution(bin.getBoxes())
 
-@njit(parallel=True)
+@njit
 def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[int])->List[Ind]:
     lst = [ ]
-    for i in prange(len(pob)):
+    for i in np.arange(len(pob)):
         ind:Ind = create_intidivual(NumbaList(pob[i]))
         CalcFi(ind,boxesData,container)
         lst.append(ind)
