@@ -7,6 +7,7 @@ from collections import OrderedDict
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi,Hamming
+
 specAG = OrderedDict()
 specAG['_prSelect'] = types.float64
 specAG['_prMut'] = types.float64
@@ -22,7 +23,6 @@ class NAG:
         self._prCross=pc
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
-
     def Train(self,maxItr:int,pob:List[Ind],datos,contenedor):
         max_pop = len(pob)
         rd :List[float]= []
@@ -36,10 +36,10 @@ class NAG:
         self.BestInd=pob[0]
         rd = np.array(rd,dtype=np.float64)
         self.bestfi = NumbaList(rd)
-
+        return pob[0]
     def NextGen(self,pob:List[Ind],datos,contenedor):
         n = len(pob)
-        k = random.randint(int(n/4),n) #numero de individuos intentar por crear por pares
+        k = random.randint(int(n/2),n) #numero de individuos intentar por crear por pares
         existedPob = [ind.codeSolution for ind in pob]
         if k % 2 != 0:
             k -=1 
@@ -90,8 +90,7 @@ class NAG:
 
 @njit
 def NotRepeated(h1:str,existedPob:List[str]):
-    foo=True
-    for j in prange(len(existedPob)):
+    for j in np.arange(len(existedPob)):
         if h1 == existedPob[j]:
            return False
     return True

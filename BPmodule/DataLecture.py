@@ -1,6 +1,5 @@
 import json
 import os
-from Contenedor import Item
 def ExpotarJSON(path, cajas:list,bin:list):
     data = {
       "box": [],
@@ -9,7 +8,7 @@ def ExpotarJSON(path, cajas:list,bin:list):
       }
       }
     for caja in cajas:
-        caja:Item = caja
+        caja = caja
         data["box"].append({
         "id": caja.id,
         "dimension": {"x":int(caja.dimensions[0]),"y":int(caja.dimensions[2]),"z":int(caja.dimensions[1])},

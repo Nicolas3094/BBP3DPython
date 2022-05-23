@@ -24,7 +24,7 @@ class Ind:
          self.codeSolution = ''
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
-@njit(nogil=True)
+@njit
 def create_intidivual(gen:List[int]):
     return Ind(gen)
 
@@ -60,6 +60,21 @@ def CreatePermutation(ls1:List[int])->List[int]:
         newcode[i] = xj
         visited[xj]=True
     return newcode
+
+def CreateHeuristicPob(num:int,BoxSeq:list,reverse=False):
+    poblation = []
+    originalInd = [i for i in range(1, len(BoxSeq)+1)]
+    DataSet = list(zip(originalInd, BoxSeq))
+    DataSet.sort(key=lambda x : x[1][0]*x[1][1]*x[1][2], reverse=reverse)
+    volSeq = np.array([vec[0] for vec in DataSet],dtype=np.int64)
+    poblation.append(volSeq)
+    for i in range(3):  # ordena por longitud, ancho y alto
+        DataSet.sort(key=lambda x : x[1][i], reverse=reverse)
+        di = np.array([vec[0] for vec in DataSet],dtype=np.int64)
+        poblation.append(di)
+    poblation.extend(CreatePoblation(num-len(poblation),NumbaList(originalInd)))
+    return poblation
+
 @njit
 def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
     poblation = np.zeros(shape=(num, len(ls2)), dtype=np.int64)
@@ -67,7 +82,7 @@ def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
         poblation[_] = CreatePermutation(ls2)
     return poblation
 
-@njit(nogil=True)
+@njit
 def CalcFi(ind:Ind, boxesData:List[List[int]], container:List[int]):
     bin = create_Bin(NumbaList(container))
     boxesData = NumbaList(boxesData)
@@ -163,6 +178,9 @@ def RandomSwapSeq(gen:List[int],index:int):
     cp = gen.copy()
     gen[:index]=cp[index+1:]
     gen[index+1:] = cp[:index]
+
+
+
 @njit
 def SwapSeqIndex(gen:List[int],index:int)->List[int]:
     n= len(gen)
@@ -182,6 +200,17 @@ def Swap2Points(gen:List[int],i:int,j:int):
     auxpt = gen[i]
     gen[i] = gen[j]
     gen[j] = auxpt
+@njit
+def SwapPointValue(gen:List[int], i:int,val:int):
+    if gen[i] == val:
+        return
+    tmp = gen[i]
+    n = len(gen)
+    for j in np.arange(n):
+        if i!=j and gen[j]==val:
+            gen[i] = val
+            gen[j]=tmp
+            break
 @njit
 def InsertionSeq(gen:List[int],indexToInsert:int,indexValue:int)->List[int]:
     newgen = gen.copy()

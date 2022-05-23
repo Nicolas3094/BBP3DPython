@@ -47,7 +47,7 @@ def Placement(Bin_Dim:List[int],PosiblePoint:List[int])->bool:
         return PosiblePoint[2] <= Bin_Dim[2] and PosiblePoint[1] <=  Bin_Dim[1] and PosiblePoint[0] <= Bin_Dim[0] 
 @njit
 def ABIntersect(Amax,Amin,Bmax,Bmin)->bool:
-    for i in range(3):
+    for i in np.arange(3):
         if Amin[i] >= Bmax[i] or Amax[i] <= Bmin[i]:
             return False
     return True
@@ -62,7 +62,7 @@ def Overlap(pos:List[int],boxId:int,DataSet:List[List[int]],orderBox:List[int],p
                 oldbx =NumbaList(DataSet[orderBox[i]-1])
                 Bmax = NumbaList([Bmin[0] +oldbx[0],Bmin[1]+oldbx[1],Bmin[2]+oldbx[2]])
                 if ABIntersect(Amax,Amin,Bmax,Bmin):
-                        return True
+                    return True
         return False
 @njit#(void(int64[:],int64,int64[:,:],int64[:],int64[:,:]),nogil=True)
 def IterateDBLF(pos:List[int], boxId:int,DataSet:List[List[int]],orderBox:List[int],posBoxes:List[List[int]] ):
@@ -103,6 +103,5 @@ def NumDBLF(bin:Bin, itemsToPack:List[int], DataSet:List[List[int]])->None:
                     break
         if (lstP.size() == 1):
             return
-        lstP.pop() #Hay error aqui por Numba me pide que retorne el tipo de dato de Nodo de la lista de proridad, chale   
-
+        lstP.pop() 
 

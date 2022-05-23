@@ -1,15 +1,41 @@
 
 import random
 import pandas as pd
-from BPmodule.Contenedor import Item
 import numpy as np
+class Item:
+    def __init__(self,classType=0,dimensions=None, minMaxVertex = None):
+        self.id = classType
+        self.dimensions = np.array(dimensions)
+        if minMaxVertex is not None:
+            self.MinV = np.array(minMaxVertex[0])
+            self.MaxV = np.array(minMaxVertex[1])
+            self.dimensions = np.abs(self.MaxV-self.MinV)
+        else:
+             self.MinV =None
+             self.MaxV=None
+        self.Vol = np.prod(self.dimensions)
+    def AddPoint(self, point:list):
+        self.MinV = np.array(point)
+        self.MaxV = self.dimensions + self.MinV
+
 class BPP3DInstanceGenerator():
-    def __init__(self, num_items = None, bin=None):
-        self._numItems = num_items
-        self._Bin = bin
+    def __init__(self):
+       pass
 
     def CreateDataSet(self,DataSet):
-        AlgBinsProblem = [[20,20,20],[50,50,50],[100,100,100],[200,200,200],[300,300,300]]
+        AlgBinsProblem = np.array(
+                [[20,20,20],
+                [50,50,50],
+                [100,100,100],
+                [200,200,200],
+                [300,300,300]],
+            dtype=np.int64)
+        createDataSet1 = lambda alg, num : [
+            np.array([AlgBinsProblem[alg]],dtype=np.int64),
+            self.Alg1(num,AlgBinsProblem[alg])]   
+        createDataSet2 = lambda alg, num : [
+            np.array([AlgBinsProblem[alg]],dtype=np.int64),
+            self.Alg2(num,AlgBinsProblem[alg])]  
         if DataSet=='S1':
             return self.SDataSet(1)
         elif DataSet=='S2':      
@@ -28,38 +54,34 @@ class BPP3DInstanceGenerator():
             return self.SDataSet(8)
 
         elif DataSet=='Alg1-P1':
-            return (AlgBinsProblem[0],self.Alg1(15,AlgBinsProblem[0]))
+            return createDataSet1(0,15)
         elif DataSet=='Alg2-P1':
-            return (AlgBinsProblem[0],self.Alg2(16,AlgBinsProblem[0]))
+            return createDataSet2(0,16)
+            
         elif DataSet=='Alg1-P2':
-            return (AlgBinsProblem[1],self.Alg1(29,AlgBinsProblem[1]))
+            return createDataSet1(1,29)
         elif DataSet=='Alg2-P2':
-            return (AlgBinsProblem[1],self.Alg2(25,AlgBinsProblem[1]))
+            return createDataSet2(1,25)
         
         elif DataSet=='Alg1-P3':
-            return (AlgBinsProblem[2],self.Alg1(50,AlgBinsProblem[2]))
+            return createDataSet1(2,50)
         elif DataSet=='Alg2-P3':
-            return (AlgBinsProblem[2],self.Alg2(52,AlgBinsProblem[2]))
+            return createDataSet2(2,52)
       
-
         elif DataSet=='Alg1-P4':
-            return (AlgBinsProblem[3],self.Alg1(106,AlgBinsProblem[3]))
+            return createDataSet1(3,106)
         elif DataSet=='Alg2-P4':
-            return (AlgBinsProblem[3],self.Alg2(100,AlgBinsProblem[3]))
-       
-        
+            return createDataSet2(3,100)
+               
         elif DataSet=='Alg1-P5':
-            return (AlgBinsProblem[4],self.Alg1(155,AlgBinsProblem[4]))
+            return [[AlgBinsProblem[4]],self.Alg1(155,AlgBinsProblem[4])]
         elif DataSet=='Alg2-P5':
-            return (AlgBinsProblem[4],self.Alg2(151,AlgBinsProblem[4]))
+            return createDataSet2(4,151)
        
         else:
             raise Exception("DataSets: S1,..., S8, Alg1-P1,..., Alg3-P1,...Alg3-P5")
         
-    def Alg1(self,num_boxes = None,bin= None)->list:
-        if num_boxes == None or bin == None:
-            num_boxes = self._numItems
-            bin = self._Bin
+    def Alg1(self,num_boxes,bin)->list[list[int]]:
         i= int(np.ceil((num_boxes-1)/7))
         items=[Item(minMaxVertex=([0,0,0],bin))]
         for _ in range(i):
@@ -76,13 +98,10 @@ class BPP3DInstanceGenerator():
                     randpoint[k] = np.random.randint(1,item.dimensions[k])
             newCubes = self.__Create8Boxes__(randpoint,item.dimensions)
             items = items + newCubes
-        itemsValues = [ itemV.dimensions for itemV in items]
+        itemsValues = np.array([ itemV.dimensions for itemV in items],dtype=np.int64)
         return itemsValues
     
-    def Alg2(self,num_boxes = None,bin= None):
-        if num_boxes == None or bin == None:
-            num_boxes = self._numItems
-            bin = self._Bin
+    def Alg2(self,num_boxes,bin)->list[list[int]]:
         i= int(np.ceil((num_boxes-1)/3))
         items=[Item(minMaxVertex=([0,0,0],bin))]
         for _ in range(i):
@@ -99,13 +118,10 @@ class BPP3DInstanceGenerator():
             randpoint[2] = np.random.randint(1,item.dimensions[2])
             newCubes = self.__Create4Boxes__(randpoint,item.dimensions)
             items = items + newCubes
-        itemsValues = [ itemV.dimensions for itemV in items]
+        itemsValues = np.array([ itemV.dimensions for itemV in items],dtype=np.int64)
         return itemsValues
 
-    def Alg3(self,num_boxes = None,bin= None):
-        if num_boxes == None or bin == None:
-            num_boxes = self._numItems
-            bin = self._Bin
+    def Alg3(self,num_boxes,bin):
         i= int(np.ceil((num_boxes-1)/10))
         items=[Item(minMaxVertex=([0,0,0],bin))]
         for _ in range(i):
@@ -235,6 +251,7 @@ class BPP3DInstanceGenerator():
             data.append(dim)            
         return (bin,data)
 generator = BPP3DInstanceGenerator()
+
 PROBLEM1 = [generator.CreateDataSet('Alg1-P1'),generator.CreateDataSet('Alg2-P1')]
 PROBLEM2 = [generator.CreateDataSet('Alg1-P2'),generator.CreateDataSet('Alg2-P2')]
 PROBLEM3 = [generator.CreateDataSet('Alg1-P3'),generator.CreateDataSet('Alg2-P3')]
