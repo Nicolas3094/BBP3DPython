@@ -81,37 +81,32 @@ class DABC:
         return self.BestInd
 
     def ImproveFlower(self,i:int,ColonyWorker:List[Ind],datos,contenedor):
-        pos = ColonyWorker[i].genome.copy()
-        fi = ColonyWorker[i].fi
-        sol = ColonyWorker[i].codeSolution
-        load = ColonyWorker[i].load
-        self.ImproveB(i, ColonyWorker)
-        CalcFi(ColonyWorker[i], datos, contenedor)
-        if fi > ColonyWorker[i].fi:
-            self.fail[i] += 1
-            ColonyWorker[i].genome = pos
-            ColonyWorker[i].codeSolution=sol
-            ColonyWorker[i].load=load
-            ColonyWorker[i].fi=fi
+        nwGen =self.ImproveB(i, ColonyWorker)
+        newBee = create_intidivual(nwGen)
+        CalcFi(newBee, datos, contenedor)
+        if newBee.fi > ColonyWorker[i].fi:
+            ColonyWorker[i] = newBee
+            self.fail[i] =0
         else:
-            self.fail[i] = 0
+            self.fail[i] -= 1
         if self.BestInd.fi < ColonyWorker[i].fi:
             self.BestInd = ColonyWorker[i]
 
-    def ImproveB(self,i: int, ColonyWorker: List[Ind]) -> None:
+    def ImproveB(self,i: int, ColonyWorker: List[Ind]) -> List[int]:
         k = random.randint(0, self.n-1)
         j = random.randint(0, self.pop_num-1)
         while i == j:
             j = random.randint(0, self.pop_num-1)
         beeK = ColonyWorker[j]
+        nwcd = ColonyWorker[i].genome.copy()
         vik = abs(round(ColonyWorker[i].genome[k] + random.uniform(-1, 1)
                 * (ColonyWorker[i].genome[k]-beeK.genome[k])))
         if vik > self.n:
             vik = self.n
         elif vik < 1:
             vik = 1
-        ColonyWorker[i].genome[k] = vik
-        SwapPointValue(ColonyWorker[i].genome,k,vik)
+        SwapPointValue(nwcd,k,vik)
+        return nwcd
 
     def WorkerBeePhase(self,ColonyWorker,datos,contenedor):
         for i in np.arange(self.pop_num):

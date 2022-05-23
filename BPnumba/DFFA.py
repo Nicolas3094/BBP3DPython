@@ -84,7 +84,7 @@ class DFFA:
         self.BestInd = fireflyPob[fnum-1]
         rd = np.array(rd, dtype=np.float64)
         self.bestfi = NumbaList(rd)
-        return fireflyPob[fnum-1]
+        return self.BestInd
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist):
         betta: float = 1-1/(1+self.gamma*dist*dist)
         BettaStep(firefly.genome, ObjFirerly.genome, betta)
