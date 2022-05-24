@@ -1,7 +1,7 @@
 import numpy as np
 import random
 from numba.typed import List as NumbaList
-from numba import types, prange,njit,deferred_type,typed,from_dtype
+from numba import types, njit,deferred_type
 from typing import List
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList

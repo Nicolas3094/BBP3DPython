@@ -1,10 +1,10 @@
 import numpy as np
 import random
-from BPnumba.GeneticOperators import CreatePoblation, InstancePob, Hamming,SwapPointValue
+from BPnumba.GeneticOperators import Hamming,SwapPointValue
 from BPnumba.NumAG import CalcFi
 
 from numba.typed import List as NumbaList
-from numba import prange, njit, deferred_type, types, optional
+from numba import  njit, deferred_type, types
 from typing import List
 from collections import OrderedDict
 from numba.experimental import jitclass
