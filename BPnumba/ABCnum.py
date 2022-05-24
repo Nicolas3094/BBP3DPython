@@ -65,8 +65,10 @@ class DABC:
         listaL = [ NumbaList([i,0]) for i in np.arange(self.pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
-        self.Limit = self.pop_num*(len(datos))*100
-
+        self.Limit = self.pop_num*self.n
+        for bee in ColonyWorker:
+            if bee.fi > self.BestInd.fi:
+                self.BestInd=bee
         for _ in np.arange(numItr):
             # Busqueda local de abejas para todas las trabajadoras y calcila Pi
             self.WorkerBeePhase(ColonyWorker,datos,contenedor)
@@ -74,9 +76,12 @@ class DABC:
             self.OnlookerPhase(ColonyWorker,datos,contenedor)
             #Busqueda de mejoras de acuerdo al Limite
             self.ScoutPhase(ColonyWorker,datos,contenedor)
+            for bee in ColonyWorker:
+                if bee.fi > self.BestInd.fi:
+                    self.BestInd=bee
             rd.append(self.BestInd.fi)
-            #if self.BestInd.fi == 1:
-            #    break
+            if self.BestInd.fi == 1:
+                break
         rd = np.array(rd,dtype=np.float64)
         self.bestfi = NumbaList(rd)
         return self.BestInd
@@ -90,8 +95,7 @@ class DABC:
             self.fail[i][1] =0
         else:
             self.fail[i][1] += 1
-        if self.BestInd.fi < ColonyWorker[i].fi:
-            self.BestInd = ColonyWorker[i]
+        
 
     def ImproveB(self,i: int, ColonyWorker: List[Ind]) -> List[int]:
         k = random.randint(0, self.n-1)
@@ -121,7 +125,6 @@ class DABC:
         maxFail = self.fail.copy()
         maxFail.sort(key=lambda x: x[1], reverse=True)
         if maxFail[0][1] >= self.Limit:
-            print("Make scouting")
             ColonyWorker[maxFail[0][0]] = CreateUniformRandomSoltion(self.n, datos, contenedor)
             self.fail[maxFail[0][0]][1] = 0
 ABC_type.define(DABC.class_type.instance_type)
