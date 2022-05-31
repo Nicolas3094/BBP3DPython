@@ -39,17 +39,7 @@ class PQVector:
             return 
         tmp = make_linked_node(vec)
         top:List[int]=self.__top.data
-        if self.Cond1(vec,top):
-            tmp.next = self.__top
-            self.__top=tmp
-            self.__n+=1
-            return
-        elif self.Cond2(vec,top):
-            tmp.next = self.__top
-            self.__top=tmp
-            self.__n+=1
-            return
-        elif self.Cond3(vec,top):
+        if self.Cond1(vec,top) or self.Cond2(vec,top) or self.Cond3(vec,top):
             tmp.next = self.__top
             self.__top=tmp
             self.__n+=1
@@ -59,18 +49,32 @@ class PQVector:
         while q.next is not None:
             qprev = q
             q = q.next
-            if self.Cond1(vec,q.data):
+            if self.Cond1(vec,q.data) or self.Cond2(vec,q.data) or self.Cond3(vec,q.data):
                 q=qprev
                 break
-            elif self.Cond2(vec,q.data):
-                q=qprev
-                break
-            elif self.Cond3(vec,q.data):
-                q=qprev
-                break
+            if (q.data[0] == tmp.data[0] and 
+                q.data[1] == tmp.data[1] and 
+                q.data[2] == tmp.data[2]):
+                return
         tmp.next=q.next 
         q.next = tmp
         self.__n+=1
+    def eliminateDuplicates(self):
+        q = self.__top
+        qprev = q
+        while q.next is not None:
+            qprev = q
+            q = q.next
+            if qprev.data[0] == q.data[0] and qprev.data[2] == q.data[2]:
+                if q.next is not None:
+                    qprev.next = q.next
+                    q=qprev
+                    self.__n -=1
+                else:
+                    q=None
+                    qprev.next = None
+                    self.__n -=1
+                    break
     def pop(self)->None:
         if not self.empty():
             tmp = self.__top
@@ -79,7 +83,42 @@ class PQVector:
                 return
             self.__top = tmp.next
             self.__n-=1
-
+    def printQ(self):
+        if self.__n == 0:
+            return
+        q=self.__top
+        while q.next is not None:
+            print(q.data)
+            q=q.next
+        print(q.data)
+    def getPt(self, i:int):
+        q = self.__top
+        k = 0
+        while q.next is not None and k != i:
+            q=q.next
+            k+=1
+        return q.data
+    def delPt(self, i:int):
+        q = self.__top
+        qprev = q
+        k = 0
+        if i == 0:
+            if q.next is None:
+                self.__top=make_linked_node(NumbaList([-1,-1,-1]))
+                self.__n = 0
+            else:
+                self.__top=q.next
+                self.__n -= 1
+            return
+        while q.next is not None and k != i:
+            qprev=q
+            q=q.next
+            k+=1
+        if q.next is None:
+            qprev.next = None
+        else:
+            qprev.next = q.next
+        self.__n -= 1
     def top(self)->List[int]:
         return self.__top.data
     def empty(self)->bool:

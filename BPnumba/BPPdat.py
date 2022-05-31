@@ -1,3 +1,5 @@
+import re
+from sys import ps1
 import numpy as np
 from numba import types, typed, njit,deferred_type
 from numba.experimental import jitclass
@@ -101,7 +103,49 @@ def NumDBLF(bin:Bin, itemsToPack:List[int], DataSet:List[List[int]])->None:
                             pt[k] -= itemV[k]
                     boxes.pop(i)
                     break
-        if (lstP.size() == 1):
-            return
-        lstP.pop() 
+        lstP.pop()    
+    
+@njit
+def DBLF(bin:Bin, itemsToPack:List[int], BoxesData:List[List[int]]):
+    lstP:list[list[int]] = list()
+    lstP.append(NumbaList([0,0,0]))
+    for i in np.arange(len(itemsToPack)):
+        print("i",i)
+        print("len ",len(lstP))
+        for j in np.arange(len(lstP)):
+            pt = lstP[j]
+            boxID = itemsToPack[i]
+            itemV = BoxesData[boxID-1]
+            if  Placement(bin.dimensions,NumbaList([pt[0]+itemV[0],pt[1]+itemV[1],pt[2]+itemV[2]])):
+                intersect = Overlap(pt,boxID,BoxesData, bin.getBoxes(),bin.getPositions())
+                if intersect:
+                    continue
+                else:
+                    del lstP[j]
+                    print("j",j)
+                    IterateDBLF(pt,boxID,BoxesData,bin.getBoxes(),bin.getPositions())
+                    print("iterate")
+                    bin.addBox(boxID,pt,itemV)
+                    print("Added")
+                    for k in np.arange(3):
+                        if pt[k] + itemV[k] < bin.dimensions[k]:
+                            pt[k] += itemV[k]
+                            newpt = pt.copy()
+                            lstP.append(NumbaList(newpt))
+                            print(lstP)
+                            pt[k] -= itemV[k]
+                    print("New Points")
+                    #print(lstP)
+                    print("deleted ", j)
+                    if i==1:
+                        return  
+                    lstP.sort(key=lambda x: (x[0],x[2]) )
+                    #print(lstP)
+                    print("end")
+                    #if i == 1:
+                    #    return
+                    break
+
+
+
 

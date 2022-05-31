@@ -1,6 +1,7 @@
 import json
 import os
-def ExpotarJSON(path, cajas:list,bin:list):
+
+def ExpotarJSON(path,cajas:list,bin:list):
     data = {
       "box": [],
       "bin": {
