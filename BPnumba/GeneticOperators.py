@@ -6,7 +6,7 @@ from typing import List
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from collections import OrderedDict
-from BPnumba.BPPdat import create_Bin,NumDBLF
+from BPnumba.BPPdat import create_Bin,DBLF,DBLF2
 
 sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
@@ -83,22 +83,25 @@ def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
     return poblation
 
 @njit
-def CalcFi(ind:Ind, boxesData:List[List[int]], container:List[int]):
+def CalcFi(ind:Ind, boxesData:List[List[int]], container:List[int],heuristic:int=0):
     bin = create_Bin(NumbaList(container))
     boxesData = NumbaList(boxesData)
     gene = ind.genome
-    NumDBLF(bin,gene,boxesData)
+    if heuristic == 0:
+        DBLF(bin,gene,boxesData)
+    else:
+        DBLF2(bin,gene,boxesData)
     resp = bin.getLoadVol()/(container[0]*container[1]*container[2])
     ind.load=bin.getN()
     ind.fi = resp
     ind.codeSolution = CodeSolution(bin.getBoxes())
 
 @njit
-def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[int])->List[Ind]:
+def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[int],heuristic:int=0)->List[Ind]:
     lst = [ ]
     for i in np.arange(len(pob)):
         ind:Ind = create_intidivual(NumbaList(pob[i]))
-        CalcFi(ind,boxesData,container)
+        CalcFi(ind,boxesData,container,heuristic)
         lst.append(ind)
     return lst
 
@@ -178,8 +181,6 @@ def RandomSwapSeq(gen:List[int],index:int):
     cp = gen.copy()
     gen[:index]=cp[index+1:]
     gen[index+1:] = cp[:index]
-
-
 
 @njit
 def SwapSeqIndex(gen:List[int],index:int)->List[int]:

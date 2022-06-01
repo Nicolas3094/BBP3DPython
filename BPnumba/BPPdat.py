@@ -6,7 +6,7 @@ from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from typing import List
 from collections import OrderedDict
-from BPnumba.PqueueNumba import PQVector
+from BPnumba.PqueueNumba import CreatePriorityQueue,PQVector,listP_type
 
 Bin_type = deferred_type()
 specB = OrderedDict()
@@ -41,10 +41,9 @@ class Bin:
 @njit
 def create_Bin(dimensions):
     return Bin(dimensions)
-    
 Bin_type.define(Bin.class_type.instance_type)
 
-@njit#(boolean(int64[:],int64[:]),nogil=True)
+@njit
 def Placement(Bin_Dim:List[int],PosiblePoint:List[int])->bool:
         return PosiblePoint[2] <= Bin_Dim[2] and PosiblePoint[1] <=  Bin_Dim[1] and PosiblePoint[0] <= Bin_Dim[0] 
 @njit
@@ -53,7 +52,7 @@ def ABIntersect(Amax,Amin,Bmax,Bmin)->bool:
         if Amin[i] >= Bmax[i] or Amax[i] <= Bmin[i]:
             return False
     return True
-@njit#(boolean(int64[:],int64,int64[:,:],int64[:],int64[:,:]),nogil=True)
+@njit
 def Overlap(pos:List[int],boxId:int,DataSet:List[List[int]],orderBox:List[int],positionBox:List[List[int]] )->bool:
         boxId -=1
         nwBox = NumbaList(DataSet[boxId])
@@ -66,7 +65,7 @@ def Overlap(pos:List[int],boxId:int,DataSet:List[List[int]],orderBox:List[int],p
                 if ABIntersect(Amax,Amin,Bmax,Bmin):
                     return True
         return False
-@njit#(void(int64[:],int64,int64[:,:],int64[:],int64[:,:]),nogil=True)
+@njit
 def IterateDBLF(pos:List[int], boxId:int,DataSet:List[List[int]],orderBox:List[int],posBoxes:List[List[int]] ):
     if len(orderBox) <= 1 :
         return
@@ -78,74 +77,50 @@ def IterateDBLF(pos:List[int], boxId:int,DataSet:List[List[int]],orderBox:List[i
             if pos[_]==-1:
                 break
         pos[_]+=1
+@njit
+def AddBox(lstP:PQVector,bin:Bin,pt:List[int],boxID:int,itemV:List[int],BoxesData:List[List[int]]):
+    IterateDBLF(pt,boxID,BoxesData,bin.getBoxes(),bin.getPositions())
+    bin.addBox(boxID,pt,itemV)
+    for k in np.arange(3):
+        if pt[k] + itemV[k] < bin.dimensions[k]:
+           pt[k] += itemV[k]
+           lstP.push(NumbaList([pt[0],pt[1],pt[2]]))
+           pt[k] -= itemV[k]
+    lstP.updateList()    
 
-@njit #(void(Bin_type, int64[:],int64[:,:]),nogil=True)
-def NumDBLF(bin:Bin, itemsToPack:List[int], DataSet:List[List[int]])->None:
+@njit 
+def DBLF2(bin:Bin, itemsToPack:List[int], DataSet:List[List[int]])->None:
     boxes = NumbaList(itemsToPack.copy())
-    lstP = PQVector(NumbaList([0,2,1]))
+    lstP = CreatePriorityQueue(NumbaList([0,2,1]))
     lstP.push(NumbaList([0,0,0]))
     while len(boxes) != 0 and not lstP.empty():
         pt = lstP.top()
+        lstP.pop() 
         for i in np.arange(len(boxes)):
             boxID = boxes[i]
             itemV = DataSet[boxID-1]
-            posiblePt = NumbaList([pt[0]+itemV[0],pt[1]+itemV[1],pt[2]+itemV[2]])
-            if Placement(bin.dimensions, posiblePt):
-                NoOverlap = not Overlap(pt,boxID,DataSet,bin.getBoxes(),bin.getPositions())
-                if NoOverlap:
-                    IterateDBLF(pt,boxID,DataSet,bin.getBoxes(),bin.getPositions())
-                    bin.addBox(boxID,pt,itemV)
-                    for k in np.arange(3):
-                        if pt[k] + itemV[k] < bin.dimensions[k]:
-                            pt[k] += itemV[k]
-                            newpt = pt.copy()
-                            lstP.push(NumbaList(newpt))
-                            pt[k] -= itemV[k]
+            if Placement(bin.dimensions, NumbaList([pt[0]+itemV[0],pt[1]+itemV[1],pt[2]+itemV[2]])):
+                overlap = Overlap(pt,boxID,DataSet,bin.getBoxes(),bin.getPositions())
+                if not overlap:
                     boxes.pop(i)
+                    AddBox(lstP,bin,pt,boxID,itemV,DataSet)
                     break
-        lstP.pop()    
     
 @njit
 def DBLF(bin:Bin, itemsToPack:List[int], BoxesData:List[List[int]]):
-    lstP:list[list[int]] = list()
-    lstP.append(NumbaList([0,0,0]))
+    lstP = CreatePriorityQueue(NumbaList([0,2,1]))
+    lstP.push(NumbaList([0,0,0]))
     for i in np.arange(len(itemsToPack)):
-        print("i",i)
-        print("len ",len(lstP))
-        for j in np.arange(len(lstP)):
-            pt = lstP[j]
+        for j in np.arange(lstP.size()):
+            pt = lstP.getPt(j)
             boxID = itemsToPack[i]
             itemV = BoxesData[boxID-1]
             if  Placement(bin.dimensions,NumbaList([pt[0]+itemV[0],pt[1]+itemV[1],pt[2]+itemV[2]])):
-                intersect = Overlap(pt,boxID,BoxesData, bin.getBoxes(),bin.getPositions())
-                if intersect:
-                    continue
-                else:
-                    del lstP[j]
-                    print("j",j)
-                    IterateDBLF(pt,boxID,BoxesData,bin.getBoxes(),bin.getPositions())
-                    print("iterate")
-                    bin.addBox(boxID,pt,itemV)
-                    print("Added")
-                    for k in np.arange(3):
-                        if pt[k] + itemV[k] < bin.dimensions[k]:
-                            pt[k] += itemV[k]
-                            newpt = pt.copy()
-                            lstP.append(NumbaList(newpt))
-                            print(lstP)
-                            pt[k] -= itemV[k]
-                    print("New Points")
-                    #print(lstP)
-                    print("deleted ", j)
-                    if i==1:
-                        return  
-                    lstP.sort(key=lambda x: (x[0],x[2]) )
-                    #print(lstP)
-                    print("end")
-                    #if i == 1:
-                    #    return
+                overlap = Overlap(pt,boxID,BoxesData, bin.getBoxes(),bin.getPositions())
+                if not overlap:
+                    lstP.delPt(j)
+                    AddBox(lstP,bin,pt,boxID,itemV,BoxesData)           
                     break
-
 
 
 

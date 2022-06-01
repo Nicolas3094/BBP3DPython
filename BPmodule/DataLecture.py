@@ -1,23 +1,24 @@
 import json
 import os
 
-def ExpotarJSON(path,cajas:list,bin:list):
+
+def ExpotarJSON(path:str,Positions:list[list[int]],cajasID:list[int],Data:list[list[int]],bin:list[int]):
     data = {
       "box": [],
       "bin": {
         "x":int(bin[0]),"y":int(bin[2]),"z":int(bin[1])
       }
       }
-    for caja in cajas:
-        caja = caja
+    for i in range(len(cajasID)):
+        caja = cajasID[i]-1
         data["box"].append({
-        "id": caja.id,
-        "dimension": {"x":int(caja.dimensions[0]),"y":int(caja.dimensions[2]),"z":int(caja.dimensions[1])},
-        "position" : {"x":int(caja.MinV[0]),"y":int(caja.MinV[2]),"z":int(caja.MinV[1])},
+        "id": caja+1,
+        "dimension": {"x":int(Data[caja][0]),"y":int(Data[caja][2]),"z":int(Data[caja][1])},
+        "position" : {"x":int(Positions[i][0]),"y":int(Positions[i][2]),"z":int(Positions[i][1])},
         })
     with open(path,'w') as fp:
         json.dump(data,fp,indent=4)
-def PossiblePositions(path,positions):
+def PossiblePositions(path:str,positions:list[list[int]]):
   data = {
       "points": []
       }

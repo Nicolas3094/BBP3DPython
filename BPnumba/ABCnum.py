@@ -47,9 +47,11 @@ specABC['BestInd'] = ind_type
 specABC['Limit'] = types.int64
 specABC['fail'] = types.ListType(types.ListType(types.int64))
 specABC['bestfi'] = types.ListType(types.float64)
+specABC['__Heuristic'] = types.int64
+
 @jitclass(specABC)
 class DABC:
-    def __init__(self, pop_num: int, n: int):
+    def __init__(self, pop_num: int, n: int,heuristic:int=0):
         self.pop_num = pop_num
         self.n = n #Numero de cajas = max numero eWntero de ID de caja
         self.BestInd = Ind(NumbaList([1]))
@@ -57,6 +59,7 @@ class DABC:
         listaL = [ NumbaList([i,0]) for i in np.arange(pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
+        self.__Heuristic = heuristic
 
     def Train(self,numItr: int, ColonyWorker: List[Ind], datos:List[List[int]], contenedor:List[int]):
         rd :List[float]= []
@@ -89,7 +92,7 @@ class DABC:
     def ImproveFlower(self,i:int,ColonyWorker:List[Ind],datos,contenedor):
         nwGen =self.ImproveB(i, ColonyWorker)
         newBee = create_intidivual(nwGen)
-        CalcFi(newBee, datos, contenedor)
+        CalcFi(newBee, datos, contenedor,self.__Heuristic)
         if newBee.fi > ColonyWorker[i].fi:
             ColonyWorker[i] = newBee
             self.fail[i][1] =0
@@ -102,10 +105,10 @@ class DABC:
         j = random.randint(0, self.pop_num-1)
         while i == j:
             j = random.randint(0, self.pop_num-1)
-        beeK = ColonyWorker[j]
+        beeJ = ColonyWorker[j]
         nwcd = ColonyWorker[i].genome.copy()
         vik = abs(round(ColonyWorker[i].genome[k] + random.uniform(-1, 1)
-                * (ColonyWorker[i].genome[k]-beeK.genome[k])))
+                * (ColonyWorker[i].genome[k]-beeJ.genome[k])))
         if vik > self.n:
             vik = self.n
         elif vik < 1:
@@ -129,5 +132,5 @@ class DABC:
             self.fail[maxFail[0][0]][1] = 0
 ABC_type.define(DABC.class_type.instance_type)
 @njit 
-def createDABC(pop_num: int, n: int):
-    return DABC(pop_num,n)
+def createDABC(pop_num: int, n: int,heuristic:int=0):
+    return DABC(pop_num,n,heuristic)

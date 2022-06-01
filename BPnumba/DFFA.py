@@ -47,15 +47,14 @@ specF = OrderedDict()
 specF['BestInd'] = ind_type
 specF['bestfi'] = types.ListType(types.float64)
 specF['gamma'] = types.float64
-
-
+specF['__Heuristic'] = types.int64
 @jitclass(specF)
 class DFFA:
-    def __init__(self, gamma: float):
+    def __init__(self, gamma: float,heuristic:int = 0):
         self.gamma = gamma
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
-
+        self.__Heuristic= heuristic
     def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int]):
         fnum = len(fireflyPob)
         n = len(datos)
@@ -90,12 +89,11 @@ class DFFA:
         BettaStep(firefly.genome, ObjFirerly.genome, betta)
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int]):
         AlphaStep(firefly.genome, alpha)  # n2
-        CalcFi(firefly, DataBoxes, BinData)
-
+        CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
 
 DFFA_type.define(DFFA.class_type.instance_type)
 
 
 @njit
-def createDFFA(gamma: float = 0):
-    return DFFA(gamma)
+def createDFFA(gamma: float = 0,heuristic:int=0):
+    return DFFA(gamma,heuristic)

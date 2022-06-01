@@ -2,10 +2,9 @@ import numpy as np
 import random
 from numba.typed import List as NumbaList
 from numba import types, njit,deferred_type
+from numba.experimental import jitclass
 from typing import List
 from collections import OrderedDict
-from numba.experimental import jitclass
-from numba.typed import List as NumbaList
 from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi
 
 specAG = OrderedDict()
@@ -14,15 +13,16 @@ specAG['_prMut'] = types.float64
 specAG['_prCross'] = types.float64
 specAG['BestInd'] = ind_type
 specAG['bestfi'] = types.ListType(types.float64)
-
+specAG['__Heuristic'] = types.int64
 @jitclass(specAG)
 class NAG:
-    def __init__(self,ps:float,pm:float,pc:float):
+    def __init__(self,ps:float,pm:float,pc:float,heuristic:int =0):
         self._prSelect=ps
         self._prMut =pm
         self._prCross=pc
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
+        self.__Heuristic = heuristic
     def Train(self,maxItr:int,pob:List[Ind],datos,contenedor):
         max_pop = len(pob)
         rd :List[float]= []
@@ -31,7 +31,7 @@ class NAG:
             self.NextGen(pob,datos,contenedor)
             pob = self.Elitism(pob,max_pop)
             rd.append(pob[0].fi)
-            if pob[0].fi == 1 or (pob[0].fi-pob[-1].fi)/(pob[0].fi**2)<0.001:
+            if pob[0].fi == 1 or (pob[0].fi-pob[-1].fi)/(pob[0].fi**2)<0.0001:
                 break
         self.BestInd=pob[0]
         rd = np.array(rd,dtype=np.float64)
@@ -56,10 +56,10 @@ class NAG:
                     h2 = self.Crossover(pob[id2],pob[id1])  
                     self.Mutation(NumbaList(h1))
                     ind1 = create_intidivual(NumbaList(h1))
-                    CalcFi(ind1,NumbaList(datos),NumbaList(contenedor))
+                    CalcFi(ind1,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
                     self.Mutation(NumbaList(h2))
                     ind2 = create_intidivual(NumbaList(h2))
-                    CalcFi(ind2,NumbaList(datos),NumbaList(contenedor))
+                    CalcFi(ind2,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
                     if NotRepeated(ind1.codeSolution,existedPob):
                         pob.append(ind1)
                     if NotRepeated(ind2.codeSolution,existedPob):
@@ -96,8 +96,8 @@ def NotRepeated(h1:str,existedPob:List[str]):
     return True
 
 @njit
-def createAG(ps:float,pm:float,pc:float):
-    return NAG(ps,pm,pc)
+def createAG(ps:float,pm:float,pc:float,heuristic:int=0):
+    return NAG(ps,pm,pc,heuristic)
 ag_type = deferred_type()
 ag_type.define(NAG.class_type.instance_type)
 
