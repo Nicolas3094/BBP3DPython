@@ -31,7 +31,7 @@ class NAG:
             self.NextGen(pob,datos,contenedor)
             pob = self.Elitism(pob,max_pop)
             rd.append(pob[0].fi)
-            if pob[0].fi == 1 or (pob[0].fi-pob[-1].fi)/(pob[0].fi**2)<0.0001:
+            if pob[0].fi == 1 or (pob[0].fi-pob[-1].fi)/(pob[0].fi**2)<0.001:
                 break
         self.BestInd=pob[0]
         rd = np.array(rd,dtype=np.float64)
