@@ -55,19 +55,19 @@ class DABC:
         self.pop_num = pop_num
         self.n = n #Numero de cajas = max numero eWntero de ID de caja
         self.BestInd = Ind(NumbaList([1]))
-        self.Limit = pop_num*n
+        self.Limit = pop_num*n*100
         listaL = [ NumbaList([i,0]) for i in np.arange(pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
         self.__Heuristic = heuristic
 
     def Train(self,numItr: int, ColonyWorker: List[Ind], datos:List[List[int]], contenedor:List[int]):
+        rd :List[float]= []
         self.pop_num = len(ColonyWorker)
         self.n = len(datos)
         listaL = [ NumbaList([i,0]) for i in np.arange(self.pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
-        self.bestfi:List[float] = NumbaList(np.zeros(numItr,dtype=np.float64))
-        actualItr = 0
+        self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
         self.Limit = self.pop_num*self.n
         for bee in ColonyWorker:
             if bee.fi > self.BestInd.fi:
@@ -79,15 +79,14 @@ class DABC:
             self.OnlookerPhase(ColonyWorker,datos,contenedor)
             #Busqueda de mejoras de acuerdo al Limite
             self.ScoutPhase(ColonyWorker,datos,contenedor)
-            actualItr = _
             for bee in ColonyWorker:
                 if bee.fi > self.BestInd.fi:
                     self.BestInd=bee
-            self.bestfi[_] = self.BestInd.fi
+            rd.append(self.BestInd.fi)
             if self.BestInd.fi == 1:
                 break
-        if actualItr != numItr:
-            self.bestfi = self.bestfi[:actualItr]
+        rd = np.array(rd,dtype=np.float64)
+        self.bestfi = NumbaList(rd)
         return self.BestInd
 
     def ImproveFlower(self,i:int,ColonyWorker:List[Ind],datos,contenedor):

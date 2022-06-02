@@ -26,7 +26,7 @@ def AlphaStep(genome: List[int], alpha: int):
     maxL = n
     for i in np.arange(n):
         tmp = genome[i]
-        posVal = abs(round(genome[i] + alpha*(random.random()-0.5)))
+        posVal = abs(round(genome[i] + alpha*(random.uniform(0,1)-0.5)))
         if posVal < minL:
             posVal=minL
             minL +=1
@@ -58,11 +58,11 @@ class DFFA:
     def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int]):
         fnum = len(fireflyPob)
         n = len(datos)
-        self.bestfi: List[float] = NumbaList(np.zeros(Maxitr, dtype=np.float64))
+        rd: List[float] = []
+        self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         fireflyPob.sort(key=lambda x: x.fi)
-        actualItr = 0
         for _ in np.arange(Maxitr):
-            alpha = np.floor(n-((_)/Maxitr)*(n))
+            alpha = np.floor(n-((_+1)/Maxitr)*(n))
             for i in np.arange(fnum-1):
                 for j in np.arange(i+1, fnum):
                     dist = Hamming(NumbaList(fireflyPob[j].genome), NumbaList(
@@ -72,18 +72,15 @@ class DFFA:
                     if Ii < Ij:
                         self.MoveFF(fireflyPob[i], fireflyPob[j], dist)
                         self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
-                    elif dist == 0:
-                        self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
-            self.bestfi[_] = fireflyPob[fnum-1].fi
-            actualItr =_
+            rd.append(fireflyPob[fnum-1].fi)
             if fireflyPob[fnum-1].fi == 1:
                 self.BestInd = fireflyPob[fnum-1]
                 break
             self.RandomMove(fireflyPob[fnum-1], alpha, datos, contenedor)    
             fireflyPob.sort(key=lambda x: x.fi)
         self.BestInd = fireflyPob[fnum-1]
-        if actualItr != Maxitr:
-            self.bestfi =self.bestfi[:actualItr]
+        rd = np.array(rd, dtype=np.float64)
+        self.bestfi = NumbaList(rd)
         return self.BestInd
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist):
         betta: float = 1/(1+self.gamma*dist*dist)
