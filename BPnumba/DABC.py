@@ -54,7 +54,7 @@ class DABC:
         self.pop_num = pop_num
         self.n = n #Numero de cajas = max numero eWntero de ID de caja
         self.BestInd = Ind(NumbaList([1]))
-        self.Limit = pop_num*n*100
+        self.Limit = pop_num*n
         listaL = [ NumbaList([i,0]) for i in np.arange(pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))

@@ -38,33 +38,11 @@ def CodeSolution(idLoaded:List[int])->types.unicode_type:
 
 @njit
 def CreatePermutation(ls1:List[int])->List[int]:
-    xmin =ls1[0]
-    xmax= ls1[len(ls1)-1] 
-    visited = [ False for i in np.arange(xmax+1)]
-    newcode = np.zeros(xmax,dtype=np.int64)
-    for i in np.arange(xmax):
-        xj = random.randint(xmin,xmax)
-        if xj == xmin:
-            xj=xmin
-            xmin +=1
-        elif xj== xmax:
-            xj=xmax
-            xmax -=1
-        while visited[xj]:
-            xj = random.randint(xmin,xmax)
-            if xj == xmin:
-                xj=xmin
-                xmin +=1
-            elif xj == xmax:
-                xj=xmax
-                xmax -=1
-        newcode[i] = xj
-        visited[xj]=True
-    return newcode
+    return np.asarray(np.random.choice(ls1,len(ls1), replace=False),dtype=np.int64)
 
 def CreateHeuristicPob(num:int,BoxSeq:list,reverse=False):
     poblation = []
-    originalInd = [i for i in range(1, len(BoxSeq)+1)]
+    originalInd = np.arange(1,len(BoxSeq)+1,dtype=np.int64)
     DataSet = list(zip(originalInd, BoxSeq))
     DataSet.sort(key=lambda x : x[1][0]*x[1][1]*x[1][2], reverse=reverse)
     volSeq = np.array([vec[0] for vec in DataSet],dtype=np.int64)
@@ -73,8 +51,10 @@ def CreateHeuristicPob(num:int,BoxSeq:list,reverse=False):
         DataSet.sort(key=lambda x : x[1][i], reverse=reverse)
         di = np.array([vec[0] for vec in DataSet],dtype=np.int64)
         poblation.append(di)
-    poblation.extend(CreatePoblation(num-len(poblation),NumbaList(originalInd)))
-    return poblation
+    for i in np.arange(num-4):
+        p2 = CreatePermutation(originalInd)
+        poblation.append(p2)
+    return np.asarray(poblation)
 
 @njit
 def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
@@ -150,7 +130,8 @@ def RouletteWheel(Pob:List[Ind])->int:
             i=-1
         i+=1
     return i
-@njit
+    
+@njit #Cruza por orden
 def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:
     n = len(P1)
     h1 = np.zeros(n,dtype=np.int64)
@@ -172,17 +153,17 @@ def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:
                 break
     return h1
 
-@njit
-def InverseMutation(gen:List[int],i,j)->List[int]:
+@njit #InverseMutation o 2-OPT mutation
+def InverseMutation(gen:List[int],i:int,j:int)->List[int]:
     tmp =gen.copy()
-    for k in np.arange(i,j+1):
-        tmp[k] = gen[j-k+i]
+    tmp[i:j+1] = gen[i:j+1][::-1]
     return tmp
 @njit
-def RandomSwapSeq(gen:List[int],index:int):
+def RandomSwapSeq(gen:List[int],index:int)->List[int]:
     cp = gen.copy()
-    gen[:index]=cp[index+1:]
-    gen[index+1:] = cp[:index]
+    cp[:index]=gen[index+1:]
+    cp[index+1:] = gen[:index]
+    return cp
 
 @njit
 def SwapSeqIndex(gen:List[int],index:int)->List[int]:

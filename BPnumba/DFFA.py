@@ -1,7 +1,8 @@
 from dataclasses import replace
+from fnmatch import fnmatch
+from hashlib import new
 import numpy as np
-import random
-from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, ind_type,CalcFi,InverseMutation
+from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual, ind_type,CalcFi,InverseMutation,CrossOX
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
@@ -111,6 +112,25 @@ def DAlphaStep(genome: List[int], alpha: int)->None:
     valuesV = NumbaList(np.asarray(np.random.choice(n,int(alpha),replace=False)+1,dtype=np.int64))
     for i in np.arange(int(alpha),dtype=np.int64):
         SwapPointValue(genome,indexV[i],valuesV[i])
+@njit
+def EBettaStep(f1: List[int], f2:  List[int], betta: float)->List[int]:
+    n = len(f1)
+    steps = int(np.floor(n*betta)) #Pasos, si betta == 1 se evita 
+    init = np.random.randint(0,n-2) #Existe la posibilidad que el punto inicial casi al final del genoma
+    if init + steps > n-1:
+        end=int(n-1)
+    else:
+        end=int(init+steps)
+    return CrossOX(f2,f1,init,end)
+@njit
+def EAlphaStep(genome: List[int], alpha: int,show=False)->List[int]:
+    n = len(genome)
+    init = np.random.randint(1,n-2)
+    if init+alpha>n-1:
+        end=n-1
+    else:
+        end=init+alpha
+    return InverseMutation(genome,init,end)
 
 EDFFA_type = deferred_type()
 specEF = OrderedDict()
@@ -130,10 +150,13 @@ class EDFFA:
         n = len(datos)
         rd: List[float] = []
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
-        fireflyPob.sort(key=lambda x: x.fi)
-        bestFF=fnum-1
+        bestFF=0
+        for i in np.arange(fnum):
+            if fireflyPob[i].fi > fireflyPob[bestFF].fi and bestFF != i:
+                bestFF=i
         for _ in np.arange(Maxitr):
             alpha = np.floor(n-((_+1)/Maxitr)*(n))
+            prev = bestFF
             for i in np.arange(fnum):
                 if bestFF ==i:
                     continue
@@ -142,7 +165,8 @@ class EDFFA:
                 Ij = LightInt(fireflyPob[bestFF].fi, self.gamma,  dist)
                 if Ij > Ii:
                     self.MoveFF(fireflyPob[i], fireflyPob[bestFF], dist)
-                    self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
+                    CalcFi(fireflyPob[i], datos, contenedor,self.__Heuristic)
+                    #self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
                     if fireflyPob[i].fi > fireflyPob[bestFF].fi:
                         bestFF = i
                 else:
@@ -152,15 +176,29 @@ class EDFFA:
             rd.append(fireflyPob[bestFF].fi)
             if fireflyPob[bestFF].fi == 1:
                 break
+            if prev == bestFF:
+                self.RandomMove(fireflyPob[bestFF],alpha,datos,contenedor)
+                for i in np.arange(fnum):
+                    if fireflyPob[i].fi > fireflyPob[bestFF].fi and bestFF != i:
+                        bestFF=i
         self.BestInd = fireflyPob[bestFF]
         rd = np.array(rd, dtype=np.float64)
         self.bestfi = NumbaList(rd)
         return self.BestInd
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist)->None:
-        betta: float = 1/(1+self.gamma*dist*dist)
-        DBettaStep(firefly.genome, ObjFirerly.genome, betta)
+        #betta: float = 1/(1+self.gamma*dist*dist)
+        if dist <=2:
+            return
+        betta = np.random.randint(2,dist)
+        nwgn = NumbaList(EBettaStep(firefly.genome, ObjFirerly.genome, betta))
+        firefly.genome = nwgn
+
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
-        DAlphaStep(firefly.genome, alpha)  # n2
+        if alpha == 0:
+            return
+        newgen = NumbaList(EAlphaStep(firefly.genome, alpha))
+
+        firefly.genome = newgen 
         CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
     def SelectHeuristic(self, hID:int)->None:
         self.__Heuristic= hID
