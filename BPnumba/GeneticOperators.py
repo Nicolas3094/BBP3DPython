@@ -1,3 +1,4 @@
+from operator import ge, index
 import numpy as np
 import random
 from numba.typed import List as NumbaList
@@ -6,7 +7,7 @@ from typing import List
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from collections import OrderedDict
-from BPnumba.BPPdat import create_Bin,DBLF,DBLF2
+from BPnumba.BPPH import create_Bin,DBLF,DBLF2
 
 sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
@@ -114,14 +115,14 @@ def Hamming(f1:List[int],f2:List[int])->float:
             count +=1
     return np.float64(count)
 
-@njit(nogil=True)
-def Tournament(Pob:List[Ind],pt:float=0.85)->int:
+@njit
+def Tournament(Pob:List[Ind],pt:float=1.0)->int:
     n = len(Pob)
-    i1 = random.randrange(0, n)
-    i2 = random.randrange(0, n) 
+    i1 = np.random.randint(0, n)
+    i2 = np.random.randint(0, n) 
     while i1 == i2:
-        i2 = random.randrange(0, n)
-    r = random.random()
+        i2 = np.random.randint(0, n)
+    r = np.random.random()
     if r <= pt:
         if Pob[i1].fi > Pob[i2].fi:
             return i1
@@ -172,10 +173,11 @@ def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:
     return h1
 
 @njit
-def InverseMutation(gen:List[int],i,j)->None:
+def InverseMutation(gen:List[int],i,j)->List[int]:
     tmp =gen.copy()
     for k in np.arange(i,j+1):
-        gen[k] = tmp[j-k+i]
+        tmp[k] = gen[j-k+i]
+    return tmp
 @njit
 def RandomSwapSeq(gen:List[int],index:int):
     cp = gen.copy()
@@ -248,8 +250,8 @@ def InsertionSubSeq(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]:
 @njit
 def RRSS(gen:List[int],index:int)->List[int]:
     n= len(gen)
-    r1 = random.random()
-    r2 = random.random()
+    r1 = np.random.random()
+    r2 = np.random.random()
     p1= gen[index+1:]
     p2 = gen[:index]
     if r1 > 0.5:
@@ -267,34 +269,31 @@ def RRSS(gen:List[int],index:int)->List[int]:
     return nwgn
 @njit
 def RRIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]:
-    r = random.random()
+    r = np.random.random()
     subsq= gen[i:j+1]
     if r > 0.5:
         subsq = subsq[::-1]
     n = len(gen)
     valindx = gen[indexToInsert]
-    nwgn = np.zeros(n,dtype=np.int64)
-    visited = [ False for i in np.arange(len(gen)+1)]
-    if indexToInsert + len(subsq)+1>n:
-        dif = indexToInsert + len(subsq)-n
-        indexToInsert -= dif
-        indexToInsert -= 1
-    l = indexToInsert
-    if r>0.5:
-        nwgn[l] = valindx
-        l+=1
-    for val in subsq:
-        nwgn[l]=val
-        visited[val] = True
-        l+=1
-    if r <=0.5:
-        nwgn[l] = valindx
-    visited[valindx] = True
-    for k in np.arange(n):
-        if nwgn[k] == 0:
-            for v in np.arange(k,n):
-                if not visited[gen[v]]:
-                    nwgn[k] = gen[v]
-                    visited[gen[v]]=True
-                    break
+    if indexToInsert < i:
+        nwgn = gen[:indexToInsert]
+        nwgn.extend(subsq)
+        nwgn.append(valindx)
+        if indexToInsert < i-1:
+            nwgn.extend(gen[indexToInsert+1:i])
+        if j<n-1:
+            nwgn.extend(gen[j+1:])
+    elif indexToInsert >j:
+        nwgn=gen[:i]
+        if j+1<indexToInsert:
+            nwgn.extend(gen[j+1:indexToInsert])
+        if indexToInsert < n-1 or r>0.5:
+            nwgn.extend(subsq)
+            nwgn.append(valindx)
+        else:
+            nwgn.append(valindx)
+            nwgn.extend(subsq)
+        nwgn.extend(gen[indexToInsert+1:])
+    if len(nwgn)!=n:
+        raise Exception("Error in Genetic Operator")
     return nwgn

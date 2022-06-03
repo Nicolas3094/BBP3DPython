@@ -78,6 +78,7 @@ class NAG:
         j= random.randrange(i+1,n)
         resp = CrossOX(ind1.genome,ind2.genome,i,j)
         return resp
+
     def Mutation(self,gene:List[int]):
         r = random.random()
         if r <=  self._prMut:
@@ -86,8 +87,10 @@ class NAG:
             j= random.randrange(i+1,n)
             InverseMutation(NumbaList(gene),i,j)
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
-        return pob[:bestNum]  
-
+        return pob[:bestNum]
+          
+    def SelectHeuristic(self, hID:int):
+        self.__Heuristic= hID
 @njit
 def NotRepeated(h1:str,existedPob:List[str]):
     for j in np.arange(len(existedPob)):
