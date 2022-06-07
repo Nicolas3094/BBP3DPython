@@ -1,6 +1,8 @@
 
+from ast import Lambda
 import random
 import pandas as pd
+from numpy import savetxt
 import numpy as np
 class Item:
     def __init__(self,classType=0,dimensions=None, minMaxVertex = None):
@@ -22,7 +24,8 @@ class BPP3DInstanceGenerator():
     def __init__(self):
        pass
 
-    def CreateDataSet(self,DataSet):
+    def CreateDataSet(self,DataSet,p):
+        np.random.seed(2502505 + 100*(p - 1))
         AlgBinsProblem = np.array(
                 [[20,20,20],
                 [50,50,50],
@@ -77,6 +80,7 @@ class BPP3DInstanceGenerator():
             return [[AlgBinsProblem[4]],self.Alg1(155,AlgBinsProblem[4])]
         elif DataSet=='Alg2-P5':
             return createDataSet2(4,151)
+        
        
         else:
             raise Exception("DataSets: S1,..., S8, Alg1-P1,..., Alg3-P1,...Alg3-P5")
@@ -213,25 +217,27 @@ class BPP3DInstanceGenerator():
     def CreateItemsType(self, type:int, BIN:list):
         D,W,H =BIN[0],BIN[1],BIN[2]
         wj,dj,hj = (0,0,0)
+        #np.random.seed(2502505 + 100*(p - 1))
+
         if type==1:
-            dj,wj,j = random.uniform((2/3)*D,D), random.uniform(1,(1/2)*W), random.uniform((2/3)*H,H)
+            dj,wj,hj = np.random.uniform((2/3)*D,D), np.random.uniform(1,(1/2)*W), np.random.uniform((2/3)*H,H)
         elif type==2:
-            dj,wj,hj = random.uniform((2/3)*D,D), random.uniform((2/3)*W,W), random.uniform(1,(1/2)*H)
+            dj,wj,hj = np.random.uniform((2/3)*D,D), np.random.uniform((2/3)*W,W),np.random.uniform(1,(1/2)*H)
         elif type==3:
-            dj,wj,hj = random.uniform(1,(1/2)*D), random.uniform((2/3)*W,W), random.uniform((2/3)*H,H)
+            dj,wj,hj = np.random.uniform(1,(1/2)*D), np.random.uniform((2/3)*W,W), np.random.uniform((2/3)*H,H)
         elif type==4:
-            dj,wj,hj = random.uniform((1/2)*D,D), random.uniform((1/2)*W,W), random.uniform((1/2)*H,H)
+            dj,wj,hj = np.random.uniform((1/2)*D,D), np.random.uniform((1/2)*W,W), np.random.uniform((1/2)*H,H)
         elif type==5:
-            dj,wj,hj = random.uniform(1,(1/2)*D), random.uniform(1,(1/2)*W), random.uniform(1,(1/2)*H) 
+            dj,wj,hj = np.random.uniform(1,(1/2)*D), np.random.uniform(1,(1/2)*W), np.random.uniform(1,(1/2)*H) 
         elif type == 6:
-            dj,wj,hj = random.uniform(1,10), random.uniform(1,10),  random.uniform(1,10)
+            dj,wj,hj = np.random.uniform(1,10), np.random.uniform(1,10),  np.random.uniform(1,10)
         elif type == 7:
-            dj,wj,hj = random.uniform(1,35) , random.uniform(1,35), random.uniform(1,35)           
+            dj,wj,hj = np.random.uniform(1,35) , np.random.uniform(1,35), np.random.uniform(1,35)           
         elif type == 8:
-            dj = random.uniform(1,100),random.uniform(1,100),random.uniform(1,100)
+            dj,wj,hj = np.random.uniform(1,100),np.random.uniform(1,100),np.random.uniform(1,100)
         else:
-            return self.CreateItemsType(1,W,H,D)
-        return [wj,dj,hj]
+            return self.CreateItemsType(type=1,BIN=[D,W,H])
+        return np.asarray([dj,wj,hj],dtype=np.int64)
 
     def SDataSet(self, num):
         Bin1 = [100,100,100]
@@ -252,11 +258,93 @@ class BPP3DInstanceGenerator():
         return (bin,data)
 generator = BPP3DInstanceGenerator()
 
-PROBLEM1 = [generator.CreateDataSet('Alg1-P1'),generator.CreateDataSet('Alg2-P1')]
-PROBLEM2 = [generator.CreateDataSet('Alg1-P2'),generator.CreateDataSet('Alg2-P2')]
-PROBLEM3 = [generator.CreateDataSet('Alg1-P3'),generator.CreateDataSet('Alg2-P3')]
-PROBLEM4 = [generator.CreateDataSet('Alg1-P4'),generator.CreateDataSet('Alg2-P4')]
-PROBLEM5 = [generator.CreateDataSet('Alg1-P5'),generator.CreateDataSet('Alg2-P5')]
+createDATA = lambda x,y : savetxt(
+    fname = "Instance/"+x + ".csv",
+    X= y,
+    delimiter=", ",
+    fmt='%g'
+)
+
+#Martello (200) I-IV-V, Berkey and Wang (1987) VI-VII-VIII
+classI = lambda ClassNum,BoxNum,InstanceNum :  np.asanyarray(pd.read_csv("Instance/Class"+ClassNum+"/"+str(BoxNum)+"/"+str(InstanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+
+BIN_CLSI = np.array([100,100,100],dtype=np.int64)
+CLASS_I50 =lambda InstaceID: classI(ClassNum="I",BoxNum = 50,InstanceNum=InstaceID)
+CLASS_I100 =lambda InstaceID: classI(ClassNum="I",BoxNum = 100,InstanceNum=InstaceID)
+CLASS_I150 =lambda InstaceID: classI(ClassNum="I",BoxNum = 150,InstanceNum=InstaceID)
+CLASS_I200 =lambda InstaceID: classI(ClassNum="I",BoxNum = 200,InstanceNum=InstaceID)
+
+BIN_CLSIV = np.array([100,100,100],dtype=np.int64)
+CLASS_IV50 =lambda InstaceID: classI(ClassNum="IV",BoxNum = 50,InstanceNum=InstaceID)
+CLASS_I1V00 =lambda InstaceID: classI(ClassNum="IV",BoxNum = 100,InstanceNum=InstaceID)
+CLASS_IV50 =lambda InstaceID: classI(ClassNum="IV",BoxNum = 150,InstanceNum=InstaceID)
+CLASS_IV200 =lambda InstaceID: classI(ClassNum="IV",BoxNum = 200,InstanceNum=InstaceID)
+
+BIN_CLSV = np.array([100,100,100],dtype=np.int64)
+CLASS_V50 =lambda InstaceID: classI(ClassNum="V",BoxNum = 50,InstanceNum=InstaceID)
+CLASS_V100 =lambda InstaceID: classI(ClassNum="V",BoxNum = 100,InstanceNum=InstaceID)
+CLASS_V50 =lambda InstaceID: classI(ClassNum="V",boxNum = 150,InstanceNum=InstaceID)
+CLASS_V200 =lambda InstaceID: classI(ClassNum="V",BoxNum = 200,InstanceNum=InstaceID)
+
+
+BIN_CLSVI = np.array([10,10,10],dtype=np.int64)
+CLASS_VI50 =lambda InstaceID: classI(ClassNum="VI",BoxNum = 50,InstanceNum=InstaceID)
+CLASS_VI100 =lambda InstaceID: classI(ClassNum="VI",BoxNum = 100,InstanceNum=InstaceID)
+CLASS_VI50 =lambda InstaceID: classI(ClassNum="VI",BoxNum = 150,InstanceNum=InstaceID)
+CLASS_VI200 =lambda InstaceID: classI(ClassNum="VI",BoxNum = 200,InstanceNum=InstaceID)
+
+
+BIN_CLSVII = np.array([40,40,40],dtype=np.int64)
+CLASS_VII50 =lambda InstaceID: classI(ClassNum="VII",BoxNum = 50,InstanceNum=InstaceID)
+CLASS_VII100 =lambda InstaceID: classI(ClassNum="VII",BoxNum = 100,InstanceNum=InstaceID)
+CLASS_VII50 =lambda InstaceID: classI(ClassNum="VII",BoxNum = 150,InstanceNum=InstaceID)
+CLASS_VII200 =lambda InstaceID: classI(ClassNum="VII",BoxNum = 200,InstanceNum=InstaceID)
+
+BIN_CLSVIII = np.array([100,100,100],dtype=np.int64)
+CLASS_VIII50 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 50,InstanceNum=InstaceID)
+CLASS_VIII100 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 100,InstanceNum=InstaceID)
+CLASS_VIII50 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 150,InstanceNum=InstaceID)
+CLASS_VIII200 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 200,InstanceNum=InstaceID)
+
+
+#Instancias de Karabulut
+P1A1 =lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P1/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+P1A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P1/A2"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+
+P2A1 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P2/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+P2A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P2/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+
+P3A1 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P3/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+P3A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P3/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+
+P4A1 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P4/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+P4A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P4/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+
+P5A1 =lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P5/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+P5A2 =lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P5/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
+
+BINP1 = np.array(np.array(pd.read_csv("Instance/P1/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
+BINP2= np.array(np.array(pd.read_csv("Instance/P2/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
+BINP3 = np.array(np.array(pd.read_csv("Instance/P3/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
+BINP4 = np.array(np.array(pd.read_csv("Instance/P4/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
+BINP5 = np.array(np.array(pd.read_csv("Instance/P5/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
+
+P1A1D = np.array([np.array(pd.read_csv("Instance/P1/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+P1A2D = np.array([np.array(pd.read_csv("Instance/P1/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+
+P2A1D = np.array([np.array(pd.read_csv("Instance/P2/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+P2A2D = np.array([np.array(pd.read_csv("Instance/P2/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+
+P3A1D = np.array([np.array(pd.read_csv("Instance/P3/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+P3A2D = np.array([np.array(pd.read_csv("Instance/P3/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+
+P4A1D =  np.array([np.array(pd.read_csv("Instance/P4/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+P4A2D =  np.array([np.array(pd.read_csv("Instance/P4/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+
+P5A1D = np.array([np.array(pd.read_csv("Instance/P5/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+P5A2D = np.array([np.array(pd.read_csv("Instance/P5/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
+
+
 
 
 UDLPROBLEM = {
@@ -321,3 +409,16 @@ UDLPROBLEM = {
                     ]   
     }
 }
+
+
+def CreateData(algorithm:int,problem:int):
+    if problem ==1:
+        return (BINP1,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
+    elif problem == 2:
+        return (BINP2,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
+    elif problem == 3:
+        return (BINP3,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
+    elif problem == 4:
+        return (BINP4,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
+    else:
+        return (BINP5,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))

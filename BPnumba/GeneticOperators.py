@@ -1,13 +1,13 @@
-from operator import ge, index
 import numpy as np
 import random
-from numba.typed import List as NumbaList
-from numba import types, njit,deferred_type
+from numba import types, njit,deferred_type,objmode, prange
 from typing import List
 from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from collections import OrderedDict
 from BPnumba.BPPH import create_Bin,DBLF,DBLF2
+import time
+
 
 sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
@@ -39,22 +39,50 @@ def CodeSolution(idLoaded:List[int])->types.unicode_type:
 @njit
 def CreatePermutation(ls1:List[int])->List[int]:
     return np.asarray(np.random.choice(ls1,len(ls1), replace=False),dtype=np.int64)
-
-def CreateHeuristicPob(num:int,BoxSeq:list,reverse=False):
-    poblation = []
-    originalInd = np.arange(1,len(BoxSeq)+1,dtype=np.int64)
-    DataSet = list(zip(originalInd, BoxSeq))
-    DataSet.sort(key=lambda x : x[1][0]*x[1][1]*x[1][2], reverse=reverse)
-    volSeq = np.array([vec[0] for vec in DataSet],dtype=np.int64)
-    poblation.append(volSeq)
-    for i in range(3):  # ordena por longitud, ancho y alto
-        DataSet.sort(key=lambda x : x[1][i], reverse=reverse)
-        di = np.array([vec[0] for vec in DataSet],dtype=np.int64)
-        poblation.append(di)
-    for i in np.arange(num-4):
-        p2 = CreatePermutation(originalInd)
-        poblation.append(p2)
-    return np.asarray(poblation)
+@njit #(nogil=True)
+def CreateHeuristicPob(num:int,Data:List[List[int]],bin:List[int],reversed=True)->List[List[int]]:
+    Ub = len(Data)
+    convertedData= Data.copy()
+    numTypes = len(convertedData)
+    convertedData.sort(key=lambda x:x[0]*x[1]*x[2],reverse=reversed)
+    poblation:list[list[int]] = []
+    seq:list[int]=[]
+    for data in convertedData:
+        for j in np.arange(len(convertedData)):
+            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
+                seq.append(j+1)
+                break
+    poblation.append(seq)
+    #Sort by X,Y and Z
+    convertedData.sort(key=lambda x:x[2],reverse=reversed)
+    seq=[]
+    for data in convertedData:
+        for j in np.arange(len(convertedData)):
+            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
+                seq.append(j+1)
+                break
+    poblation.append(seq)
+    convertedData.sort(key=lambda x:x[1],reverse=reversed)
+    seq=[]
+    for data in convertedData:
+        for j in np.arange(len(convertedData)):
+            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
+                seq.append(j+1)
+                break
+    poblation.append(seq)
+    convertedData.sort(key=lambda x:x[0],reverse=reversed)
+    seq=[]
+    for data in convertedData:
+        for j in np.arange(len(convertedData)):
+            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
+                seq.append(j+1)
+                break
+    poblation.append(seq)
+    originalSeq = np.arange(1,len(convertedData)+1,dtype=np.int64)
+    for _ in np.arange(num-4):
+        p = list(CreatePermutation(originalSeq))
+        poblation.append(p)
+    return poblation
 
 @njit
 def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
@@ -85,7 +113,6 @@ def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[in
         CalcFi(ind,boxesData,container,heuristic)
         lst.append(ind)
     return lst
-
 
 @njit
 def Hamming(f1:List[int],f2:List[int])->float:
@@ -152,38 +179,6 @@ def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:
                 h1[k] = P2[l]
                 break
     return h1
-
-@njit #InverseMutation o 2-OPT mutation
-def InverseMutation(gen:List[int],i:int,j:int)->List[int]:
-    tmp =gen.copy()
-    tmp[i:j+1] = gen[i:j+1][::-1]
-    return tmp
-@njit
-def RandomSwapSeq(gen:List[int],index:int)->List[int]:
-    cp = gen.copy()
-    cp[:index]=gen[index+1:]
-    cp[index+1:] = gen[:index]
-    return cp
-
-@njit
-def SwapSeqIndex(gen:List[int],index:int)->List[int]:
-    n= len(gen)
-    p1= gen[index+1:]
-    p2 = gen[:index]
-    l1 = len(p1)
-    l2 = len(p2)
-    nwgn = np.zeros(n,dtype=np.int64)
-    for i in np.arange(l1):
-        nwgn[i] = p1[i]
-    nwgn[l1]=gen[index]
-    for i in np.arange(l2):
-        nwgn[l1+1+i] = p2[i]
-    return nwgn
-@njit
-def Swap2Points(gen:List[int],i:int,j:int):
-    auxpt = gen[i]
-    gen[i] = gen[j]
-    gen[j] = auxpt
 @njit
 def SwapPointValue(gen:List[int], i:int,val:int):
     if gen[i] == val:
@@ -195,61 +190,87 @@ def SwapPointValue(gen:List[int], i:int,val:int):
             gen[i] = val
             gen[j]=tmp
             break
+@njit #InverseMutation o 2-OPT mutation
+def InverseMutation(gen:List[int],i:int,j:int)->List[int]: #Random reversing of subsequence (RRS)
+    tmp =gen.copy()
+    tmp[i:j+1] = gen[i:j+1][::-1]
+    return tmp   
+
 @njit
-def InsertionSeq(gen:List[int],indexToInsert:int,indexValue:int)->List[int]:
-    newgen = gen.copy()
-    newgen[indexToInsert]=gen[indexValue]
-    for k in np.arange(indexToInsert,indexValue):
-        newgen[k+1] = gen[k]
-    return newgen
+def RS(gen:List[int],i:int,j:int)->List[int]: #Random Swap
+    tmp = gen.copy()
+    auxpt = tmp[i]
+    tmp[i] = tmp[j]
+    tmp[j] = auxpt
+    return tmp
 @njit
-def InsertionSubSeq(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]:
+def RSS(gen:List[int],ini1:int,end1:int,ini2:int,end2:int)->List[int]:#Random Swap Subsequences
+    if end1-ini1 != end2-ini2:
+        raise Exception("Subsequences most be with same lenght.")
+    tmp = gen.copy()
+    tmp[ini1:end1+1] = gen[ini2:end2+1]
+    tmp[ini2:end2+1] = gen[ini1:end1+1]
+    return tmp
+
+@njit
+def RRSS(gen:List[int],ini1:int,end1:int,ini2:int,end2:int)->List[int]: #Random reversing swap of subsequences
+    n= len(gen)
+    if end1-ini1 != end2-ini2:
+        raise Exception("Subsequences most be with same lenght.")
+    tmp = gen.copy()
+    r1 = np.random.random()
+    r2 = np.random.random()
+    tmp = gen.copy()
+    if r1 <= 0.5:
+        tmp[ini1:end1+1] = gen[ini2:end2+1][::-1]
+    else:
+        tmp[ini1:end1+1] = gen[ini2:end2+1]
+    if r2<= 0.5:
+        tmp[ini2:end2+1] = gen[ini1:end1+1][::-1]
+    else:
+        tmp[ini2:end2+1] = gen[ini1:end1+1]
+    return tmp
+
+@njit
+def RI(gen:List[int],i:int,J:int): #Random Insertion
+    n=len(gen)
+    valueToInsert = gen[J]
+    if i != 0:
+        tmp=gen[:i]
+    tmp.append(valueToInsert)
+    tmp[i+1:J+1] = gen[i:J]
+    if J!=n-1:
+        tmp[J+1:] = gen[J+1:]
+    return tmp
+@njit
+def RIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]: #Random Insertion of subsequence
     subsq= gen[i:j+1]
     n = len(gen)
     valindx = gen[indexToInsert]
-    nwgn = np.zeros(n,dtype=np.int64)
-    visited = [ False for i in np.arange(len(gen)+1)]
-    if indexToInsert + len(subsq)+1>n:
-        dif = indexToInsert + len(subsq)-n
-        indexToInsert -= dif
-        indexToInsert -= 1
-    l = indexToInsert
-    for val in subsq:
-        nwgn[l]=val
-        visited[val] = True
-        l+=1
-    nwgn[l] = valindx
-    visited[valindx] = True
-    for k in np.arange(n):
-        if nwgn[k] == 0:
-            for v in np.arange(k,n):
-                if not visited[gen[v]]:
-                    nwgn[k] = gen[v]
-                    visited[gen[v]]=True
-                    break
+    if indexToInsert < i:
+        nwgn = gen[:indexToInsert]
+        nwgn.extend(subsq)
+        nwgn.append(valindx)
+        if indexToInsert < i-1:
+            nwgn.extend(gen[indexToInsert+1:i])
+        if j<n-1:
+            nwgn.extend(gen[j+1:])
+    elif indexToInsert > j:
+        nwgn=gen[:i]
+        if j+1<indexToInsert:
+            nwgn.extend(gen[j+1:indexToInsert])
+        if indexToInsert < n-1: #si lo dejo sin esta condicion, en este caso, la secuencia que igual
+            nwgn.extend(subsq)
+            nwgn.append(valindx)
+        else:
+            nwgn.append(valindx)
+            nwgn.extend(subsq)
+        nwgn.extend(gen[indexToInsert+1:])
+    if len(nwgn)!=n:
+        raise Exception("Error in Genetic Operator: RIS")
     return nwgn
 @njit
-def RRSS(gen:List[int],index:int)->List[int]:
-    n= len(gen)
-    r1 = np.random.random()
-    r2 = np.random.random()
-    p1= gen[index+1:]
-    p2 = gen[:index]
-    if r1 > 0.5:
-        p1 = p1[::-1]
-    if r2 > 0.5:
-        p2 = p2[::-1]
-    l1 = len(p1)
-    l2 = len(p2)
-    nwgn = np.zeros(n,dtype=np.int64)
-    for i in np.arange(l1):
-        nwgn[i] = p1[i]
-    nwgn[l1]=gen[index]
-    for i in np.arange(l2):
-        nwgn[l1+1+i] = p2[i]
-    return nwgn
-@njit
-def RRIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]:
+def RRIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]: #Random reversing insertion of subsequence
     r = np.random.random()
     subsq= gen[i:j+1]
     if r > 0.5:
@@ -276,5 +297,25 @@ def RRIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]:
             nwgn.extend(subsq)
         nwgn.extend(gen[indexToInsert+1:])
     if len(nwgn)!=n:
-        raise Exception("Error in Genetic Operator")
+        raise Exception("Error in Genetic Operator:RRIS")
     return nwgn
+
+@njit
+def Combine1(gen:List[int],i:int,j:int,i2:int,j2:int):
+    r = np.random.random()
+    if r <= 1/3:
+        return RS(i,j)
+    elif r>1/3 and r<=2/3:
+        return RSS(i,j,i2,j2)
+    else:
+        return RRSS(i,j,i2,j2)
+
+@njit
+def Combine2(gen:List[int],indexToInsert:int,i:int,j:int):
+    r = np.random.random()
+    if r <= 1/3:
+        return RI(gen,i,j)
+    elif r>1/3 and r<=2/3:
+        return RIS(gen,indexToInsert,i,j)
+    else:
+        return RRIS(gen,indexToInsert,i,j)

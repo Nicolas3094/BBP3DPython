@@ -52,7 +52,7 @@ def ABIntersect(Amax,Amin,Bmax,Bmin)->bool:
         if Amin[i] >= Bmax[i] or Amax[i] <= Bmin[i]:
             return False
     return True
-@njit
+@njit 
 def Overlap(pos:List[int],boxId:int,DataSet:List[List[int]],orderBox:List[int],positionBox:List[List[int]] )->bool:
         boxId -=1
         nwBox = NumbaList(DataSet[boxId])
@@ -65,7 +65,7 @@ def Overlap(pos:List[int],boxId:int,DataSet:List[List[int]],orderBox:List[int],p
                 if ABIntersect(Amax,Amin,Bmax,Bmin):
                     return True
         return False
-@njit
+@njit 
 def IterateDBLF(pos:List[int], boxId:int,DataSet:List[List[int]],orderBox:List[int],posBoxes:List[List[int]] ):
     if len(orderBox) <= 1 :
         return
@@ -77,7 +77,8 @@ def IterateDBLF(pos:List[int], boxId:int,DataSet:List[List[int]],orderBox:List[i
             if pos[_]==-1:
                 break
         pos[_]+=1
-@njit
+
+@njit 
 def AddBox(lstP:PQVector,bin:Bin,pt:List[int],boxID:int,itemV:List[int],BoxesData:List[List[int]]):
     IterateDBLF(pt,boxID,BoxesData,bin.getBoxes(),bin.getPositions())
     bin.addBox(boxID,pt,itemV)
