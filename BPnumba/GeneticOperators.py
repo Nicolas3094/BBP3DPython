@@ -305,7 +305,7 @@ def RRIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]: #Random revers
 def Combine1(gen:List[int],i:int,j:int,i2:int,j2:int):
     r = np.random.random()
     if r <= 1/3:
-        return RS(gen,i,j)
+        return RS(gen,i,j2)
     elif r>1/3 and r<=2/3:
         return RSS(gen,i,j,i2,j2)
     else:

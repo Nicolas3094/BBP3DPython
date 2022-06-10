@@ -50,25 +50,22 @@ def EAlphaStepC2(genome: List[int], alpha: int)->List[int]:
 @njit
 def EAlphaStepC1(genome: List[int], alpha: int)->List[int]:
     n = int(len(genome))
-    alf=0
+    alf=alpha
     if alpha % 2 != 0  and alpha != 0:
         alf = alpha-1
     if alpha== n:
-        print(0,int(n/2))
-        print(int(n/2)+1,n-1)
-        print(int(n/2),n-2 - int(n/2))
-        return Combine1(genome,0,int(n/2),int(n/2)+1,n-1)
-    
-    end = np.random.randint(int(alpha/2),int(n/2))
-    init = end-int(alpha/2)
-    step = end-init
+        init = 0
+        end = init + int(alf/2)-1
+        init1=end+1
+        fin1=init1+ int(alf/2)-1
+        return Combine1(genome,init,end,init1,fin1)
 
-    init2 =0
+    init = np.random.randint(int(n/2)-int(alf/2)+1)
+    end = init + int(alf/2)-1
+    init2 = np.random.randint(int(n/2),n-int(alf/2))
+    end2 = init2 + int(alf/2)-1
 
-    end2 = 0
-    #Combine1(genome,init,end,init2,end2)
-    newcode = np.array([2,1,34,5,1,23],dtype=np.int64)
-    print(step, init,end,init2,end2)
+    newcode =  Combine1(genome,init,end,init2,end2)
     return newcode
 @njit
 def EAlphaStep(genome: List[int], alpha: int)->List[int]:

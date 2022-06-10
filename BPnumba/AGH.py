@@ -5,7 +5,7 @@ from numba import types, njit,deferred_type
 from numba.experimental import jitclass
 from typing import List
 from collections import OrderedDict
-from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi,CodeSolution
+from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi,CodeSolution,Combine1
 
 specAG = OrderedDict()
 specAG['_prSelect'] = types.float64
@@ -93,9 +93,17 @@ class NAG:
         r = np.random.random()
         if r <= pm:
             n = len(gene)
-            i= random.randrange(1,int(n/2))
-            j= random.randrange(i+1,n)
-            InverseMutation(NumbaList(gene),i,j)
+            step = np.random.randint(1,n-2)
+
+            #i= random.randrange(1,int(n/2))
+            #j= random.randrange(i+1,n)
+            #InverseMutation(NumbaList(gene),i,j)
+            i=np.random.randint(int(n/2)-int(step/2)+1)
+            j = i + int(step/2)-1
+            i2 = np.random.randint(int(n/2),n-int(step/2))
+            j2 = i2 + int(step/2)-1
+
+            Combine1(NumbaList(gene),i,j,i2,j2)
 
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
         return pob[:bestNum]
