@@ -46,8 +46,8 @@ specF['gamma'] = types.float64
 specF['__Heuristic'] = types.int64
 @jitclass(specF)
 class DFFA:
-    def __init__(self, gamma: float,heuristic:int = 0):
-        self.gamma = gamma
+    def __init__(self, heuristic:int = 0):
+        self.gamma = 0
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         self.__Heuristic= heuristic
@@ -56,7 +56,7 @@ class DFFA:
         self.BestInd = Ind(NumbaList([1]))
         n = len(datos)
         rd: List[float] = []
-        self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np   .float64))
+        self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         self.gamma=1/n
         fireflyPob.sort(key=lambda x: x.fi)
         for _ in np.arange(Maxitr):
@@ -89,5 +89,5 @@ class DFFA:
         self.__Heuristic= hID
 DFFA_type.define(DFFA.class_type.instance_type)
 @njit
-def createDFFA(gamma: float = 0,heuristic:int=0)->DFFA:
-    return DFFA(gamma,heuristic)
+def createDFFA(heuristic:int=0)->DFFA:
+    return DFFA(heuristic)

@@ -47,6 +47,7 @@ def CreateHeuristicPob(num:int,Data:List[List[int]],bin:List[int],reversed=True)
     convertedData.sort(key=lambda x:x[0]*x[1]*x[2],reverse=reversed)
     poblation:list[list[int]] = []
     seq:list[int]=[]
+
     for data in convertedData:
         for j in np.arange(len(convertedData)):
             if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
@@ -304,11 +305,11 @@ def RRIS(gen:List[int],indexToInsert:int,i:int,j:int)->List[int]: #Random revers
 def Combine1(gen:List[int],i:int,j:int,i2:int,j2:int):
     r = np.random.random()
     if r <= 1/3:
-        return RS(i,j)
+        return RS(gen,i,j)
     elif r>1/3 and r<=2/3:
-        return RSS(i,j,i2,j2)
+        return RSS(gen,i,j,i2,j2)
     else:
-        return RRSS(i,j,i2,j2)
+        return RRSS(gen,i,j,i2,j2)
 
 @njit
 def Combine2(gen:List[int],indexToInsert:int,i:int,j:int):

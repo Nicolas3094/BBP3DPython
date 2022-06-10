@@ -31,20 +31,19 @@ def ReduceDim(Data:List[List[int]],bin:List[int])->List[List[int]]:
                     break
     return convertedData 
 
-@njit#(parallel=True)
+@njit(parallel=True)
 def Test(boxes:List[List[List[int]]],bin:List[int],alg, maxItr: int, lst: List[List[float]],heuristic:int=0):
     DATA = boxes.copy()
-    for i in np.arange(20):
-        DAT:List[List[int]]= NumbaList(ReduceDim(list(DATA[i]),bin))
+    for i in prange(20):
+        DAT:List[List[int]]= NumbaList(DATA[i])
         n:int=len(DAT)
-        Genomes:List[int] = CreateHeuristicPob(50,DAT,bin)
+        Genomes:List[int] =  CreateHeuristicPob(50,DAT,bin)
         Pob:List[Ind]= InstancePob(Genomes,DAT, bin, heuristic)
         with objmode(time1='f8'):
             time1 = time.perf_counter()
-        alg.Train(maxItr, Pob, DAT, bin)
+        bestInd:Ind = alg.Train(maxItr, Pob, DAT, bin)
         with objmode(last='f8'):
             last = time.perf_counter() - time1      
-        bestInd:Ind = alg.BestInd  
         epochs = len(alg.bestfi)
         if heuristic == 0:
             lst[i] = np.array([bestInd.fi, n-bestInd.load, epochs, last],dtype=np.float64)

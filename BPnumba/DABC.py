@@ -45,12 +45,12 @@ specABC['bestfi'] = types.ListType(types.float64)
 specABC['__Heuristic'] = types.int64
 @jitclass(specABC)
 class DABC:
-    def __init__(self, pop_num: int, n: int,heuristic:int=0):
-        self.pop_num = pop_num
-        self.n = n #Numero de cajas = max numero eWntero de ID de caja
+    def __init__(self,heuristic:int=0):
+        self.pop_num = 1
+        self.n = 1 #Numero de cajas = max numero eWntero de ID de caja
         self.BestInd = Ind(NumbaList([1]))
-        self.Limit = pop_num*n
-        listaL = [ NumbaList([i,0]) for i in np.arange(pop_num)]
+        self.Limit = 1
+        listaL = [ NumbaList([i,0]) for i in np.arange(1)]
         self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
         self.__Heuristic = heuristic
@@ -71,7 +71,6 @@ class DABC:
 
             # Busqueda local de abejas para todas las trabajadoras 
             self.WorkerBeePhase(ColonyWorker=ColonyWorker,datos=datos,contenedor=contenedor)
-            print("termina Worker phase")
             # Busqueda Onlooker bee
             self.OnlookerPhase(ColonyWorker=ColonyWorker,datos=datos,contenedor=contenedor)
             #Busqueda de mejoras de acuerdo al Limite
@@ -94,41 +93,30 @@ class DABC:
             self.fail[i][1] =0
         else:
             self.fail[i][1] += 1
-        print("ternina mejoramiento")   
     
     def ImproveB(self,i: int, ColonyWorker: List[Ind]) -> List[int]:
-        k = random.randint(0, self.n-1)
-        j = random.randint(i+1, self.pop_num-1)
+        k = np.random.randint(0, self.n-1)
+        j = np.random.randint(0, self.pop_num-1)
         while i == j:
             j = random.randint(0, self.pop_num-1)
-        print("Definitivamente es a1 ")
         beeJ = ColonyWorker[j]
         nwcd = ColonyWorker[i].genome.copy()
-        print("Deneroa")
-        vik = abs(round(ColonyWorker[i].genome[k] + random.uniform(-1, 1)*(ColonyWorker[i].genome[k]-beeJ.genome[k])))
+        vik = abs(round(ColonyWorker[i].genome[k] + np.random.uniform(-1, 1)*(ColonyWorker[i].genome[k]-beeJ.genome[k])))
         if vik > self.n:
             vik = self.n
         elif vik < 1:
             vik = 1
-        print("antes swap")
         SwapPointValue(nwcd,k,vik)
-        print("o mdespues swap")
         return nwcd
 
     def WorkerBeePhase(self,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int]):
-        print(np.arange(self.pop_num))
         for i in np.arange(self.pop_num):
             self.ImproveFlower(i=i,ColonyWorker=ColonyWorker,datos=datos,contenedor=contenedor)
-            print(" termoina el i proceso ", i)
-        print("Fin de worker phase")
 
     def OnlookerPhase(self,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int]):
         for _ in np.arange(self.pop_num):
-            print("Empieza seleccion")
             j = RouletteWheel(ColonyWorker)
-            print("Pasa por seleccion")
             self.ImproveFlower(j,ColonyWorker,datos,contenedor)
-
     def ScoutPhase(self,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int]):
         maxFail = self.fail.copy()
         maxFail.sort(key=lambda x: x[1], reverse=True)
@@ -143,5 +131,5 @@ class DABC:
 
 ABC_type.define(DABC.class_type.instance_type)
 @njit 
-def createDABC(pop_num: int, n: int,heuristic:int=0):
-    return DABC(pop_num,n,heuristic)
+def createDABC(heuristic:int=0):
+    return DABC(heuristic)

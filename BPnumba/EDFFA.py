@@ -1,5 +1,6 @@
+from multiprocessing import reduction
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual, ind_type,CalcFi,InverseMutation,CrossOX
+from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual, ind_type,CalcFi,InverseMutation,CrossOX,Combine2,Combine1
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
@@ -33,6 +34,43 @@ def EBettaStep(f1: List[int], f2:  List[int], betta: int)->List[int]:
         end=int(init+betta)
     return CrossOX(f2,f1,init,end)
 @njit
+def EAlphaStepC2(genome: List[int], alpha: int)->List[int]:
+    n = int(len(genome))
+    init = np.random.randint(1,int(n/2))
+    if init + alpha > n-2:
+        end = n-2
+    else:
+        end =  np.random.randint(init+1,n-1)
+    if np.random.random()<0.5:
+        index=np.random.randint(0,init)
+    else:
+        index=np.random.randint(end+1,n)
+    newcode = Combine2(genome,index,init,end)
+    return newcode
+@njit
+def EAlphaStepC1(genome: List[int], alpha: int)->List[int]:
+    n = int(len(genome))
+    alf=0
+    if alpha % 2 != 0  and alpha != 0:
+        alf = alpha-1
+    if alpha== n:
+        print(0,int(n/2))
+        print(int(n/2)+1,n-1)
+        print(int(n/2),n-2 - int(n/2))
+        return Combine1(genome,0,int(n/2),int(n/2)+1,n-1)
+    
+    end = np.random.randint(int(alpha/2),int(n/2))
+    init = end-int(alpha/2)
+    step = end-init
+
+    init2 =0
+
+    end2 = 0
+    #Combine1(genome,init,end,init2,end2)
+    newcode = np.array([2,1,34,5,1,23],dtype=np.int64)
+    print(step, init,end,init2,end2)
+    return newcode
+@njit
 def EAlphaStep(genome: List[int], alpha: int)->List[int]:
     n = len(genome)
     init = np.random.randint(1,n-2)
@@ -50,11 +88,12 @@ specEF['gamma'] = types.float64
 specEF['__Heuristic'] = types.int64
 @jitclass(specEF)
 class EDFFA:
-    def __init__(self, gamma: float=0,heuristic:int = 0):
-        self.gamma = gamma
+    def __init__(self, heuristic:int = 0):
+        self.gamma = 0
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         self.__Heuristic= heuristic
+        
     def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int])->Ind:
         fnum = len(fireflyPob)
         n = len(datos)
@@ -89,26 +128,22 @@ class EDFFA:
             rd.append(fireflyPob[bestFF].fi)
             if fireflyPob[bestFF].fi == 1:
                 break
-            if prev == bestFF:
-                self.RandomMove(fireflyPob[bestFF],alpha,datos,contenedor)
-                for i in np.arange(fnum):
-                    if fireflyPob[i].fi > fireflyPob[bestFF].fi and bestFF != i:
-                        bestFF=i
+            #if prev == bestFF:
+            #    self.RandomMove(fireflyPob[bestFF],alpha,datos,contenedor)
+            #    for i in np.arange(fnum):
+            #        if fireflyPob[i].fi > fireflyPob[bestFF].fi and bestFF != i:
+            #            bestFF=i
         self.BestInd = fireflyPob[bestFF]
         rd = np.array(rd, dtype=np.float64)
         self.bestfi = NumbaList(rd)
         return self.BestInd
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist)->None:
-        if dist <=1:
-            return
         betta = int(len(firefly.genome)*(1/(1+self.gamma*dist*dist))) #pasos que dependen de dist y gamma
         nwgn = NumbaList(EBettaStep(firefly.genome, ObjFirerly.genome, betta))
         firefly.genome = nwgn
 
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
-        if alpha == 0:
-            return
-        newgen = NumbaList(EAlphaStep(firefly.genome, alpha))
+        newgen = NumbaList(EAlphaStepC1(firefly.genome, alpha))
         firefly.genome = newgen 
         CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
 
@@ -117,5 +152,5 @@ class EDFFA:
 
 EDFFA_type.define(EDFFA.class_type.instance_type)
 @njit
-def createEDFFA(gamma: float = 0,heuristic:int=0)->EDFFA:
-    return EDFFA(gamma,heuristic)
+def createEDFFA(heuristic:int=0)->EDFFA:
+    return EDFFA(heuristic)

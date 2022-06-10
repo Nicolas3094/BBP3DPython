@@ -18,12 +18,12 @@ specEABC['bestfi'] = types.ListType(types.float64)
 specEABC['__Heuristic'] = types.int64
 @jitclass(specEABC)
 class EDABC:
-    def __init__(self, pop_num: int, n: int,heuristic:int=0):
-        self.pop_num = pop_num
-        self.n = n #Numero de cajas = max numero eWntero de ID de caja
+    def __init__(self, heuristic:int=0):
+        self.pop_num = 0
+        self.n = 0 
         self.BestInd = Ind(NumbaList([1]))
-        self.Limit = pop_num*n
-        listaL = [ NumbaList([i,0]) for i in np.arange(pop_num)]
+        self.Limit = 0
+        listaL = [ NumbaList([i,0]) for i in np.arange(1)]
         self.fail:List[List[int]] = NumbaList(listaL)
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64)) 
         self.__Heuristic = heuristic
@@ -55,10 +55,14 @@ class EDABC:
             self.ScoutPhase(ColonyWorker,datos,contenedor)
 
             rd.append(self.BestInd.fi)
+
             if self.BestInd.fi == 1:
-                rd = np.array(rd,dtype=np.float64)
-                self.bestfi = NumbaList(rd)
-                return self.BestInd
+                break
+            
+        rd = np.array(rd,dtype=np.float64)
+        self.bestfi = NumbaList(rd)
+
+        return self.BestInd
 
     def ImproveFlower(self,i:int,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int])->None:
         nwGen = self.ImproveB(i, ColonyWorker)
@@ -105,5 +109,5 @@ class EDABC:
 
 EABC_type.define(EDABC.class_type.instance_type)
 @njit 
-def createEDABC(pop_num: int, n: int,heuristic:int=0)->EDABC:
-    return EDABC(pop_num,n,heuristic)
+def createEDABC(heuristic:int=0)->EDABC:
+    return EDABC(heuristic)
