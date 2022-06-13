@@ -5,7 +5,44 @@ from numba import types, njit,deferred_type
 from numba.experimental import jitclass
 from typing import List
 from collections import OrderedDict
-from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi,CodeSolution,Combine1
+from BPnumba.GeneticOperators import Combine2,Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi,CodeSolution,Combine1
+
+@njit
+def MutateC2(genome: List[int], randomStep: int=0)->List[int]:
+    n = int(len(genome))
+    step=randomStep
+    if randomStep==0:
+        step = np.random.randint(1,n-2)
+    init = np.random.randint(1,int(n/2))
+    if init + step > n-2:
+        end = n-2
+    else:
+        end =  np.random.randint(init+1,n-1)
+    if np.random.random()<0.5:
+        index=np.random.randint(0,init)
+    else:
+        index=np.random.randint(end+1,n)
+    return Combine2(genome,index,init,end)
+
+@njit
+def MutateC1(gene:List[int],randomStep:int=0)->List[int]:
+    n=len(gene)
+    step=randomStep
+    if randomStep==0:
+        step = np.random.randint(1,n-2)
+    i=np.random.randint(int(n/2)-int(step/2)+1)
+    j = i + int(step/2)-1
+    i2 = np.random.randint(int(n/2),n-int(step/2))
+    j2 = i2 + int(step/2)-1
+    return Combine1(NumbaList(gene),i,j,i2,j2)
+
+@njit
+def MutateInversion(gene:List[int])->List[int]:
+    n=len(gene)
+    i= random.randrange(1,int(n/2))
+    j= random.randrange(i+1,n)
+    return InverseMutation(NumbaList(gene),i,j)
+
 
 specAG = OrderedDict()
 specAG['_prSelect'] = types.float64
@@ -30,19 +67,25 @@ class NAG:
         self.__Heuristic = heuristic
 
     def Train(self,maxItr:int,pob:List[Ind],datos:List[List[int]],contenedor:List[int])->Ind:
+        
         max_pop = len(pob)
         rd :List[float]= []
+
         pob.sort(key=lambda  ind : ind.fi, reverse=True)
+
         for _ in np.arange(maxItr):
             self.NextGen(pob,datos,contenedor)
             pob = self.Elitism(pob,max_pop)
             rd.append(pob[0].fi)
             if pob[0].fi == 1 or (pob[0].fi-pob[max_pop-1].fi)/ (pob[0].fi**2) <0.001 and pob[0].fi != pob[max_pop-1].fi:
                 break
+
         self.BestInd=pob[0]
         rd = np.array(rd,dtype=np.float64)
         self.bestfi = NumbaList(rd)
+
         return self.BestInd
+
     def NextGen(self,pob:List[Ind],datos,contenedor):
         n = len(pob)
         k = np.random.randint(int(n/2),n) #numero de individuos intentar por crear por pares
@@ -69,16 +112,19 @@ class NAG:
                     pm = 1-(pob[id1].fi+pob[id2].fi)/2
                 else:
                     pm = self._prMut
+
                 self.Mutation(NumbaList(h1),pm)
                 ind1 = create_intidivual(NumbaList(h1))
                 CalcFi(ind1,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
                 self.Mutation(NumbaList(h2),pm)
                 ind2 = create_intidivual(NumbaList(h2))
                 CalcFi(ind2,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
+
                 if ind1.codeSolution not in existedPob:
                     pob.append(ind1)
                 if ind2.codeSolution not in existedPob:
                     pob.append(ind2)
+
         pob.sort(key=lambda ind : ind.fi, reverse=True)
     def Selection(self,poblation:List[Ind])->int:
         return Tournament(poblation,self._prSelect)
@@ -91,19 +137,9 @@ class NAG:
 
     def Mutation(self,gene:List[int], pm:float):
         r = np.random.random()
-        if r <= pm:
-            n = len(gene)
-            step = np.random.randint(1,n-2)
+        if r <= pm:            
+            gene=MutateC2(NumbaList(gene))
 
-            #i= random.randrange(1,int(n/2))
-            #j= random.randrange(i+1,n)
-            #InverseMutation(NumbaList(gene),i,j)
-            i=np.random.randint(int(n/2)-int(step/2)+1)
-            j = i + int(step/2)-1
-            i2 = np.random.randint(int(n/2),n-int(step/2))
-            j2 = i2 + int(step/2)-1
-
-            Combine1(NumbaList(gene),i,j,i2,j2)
 
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
         return pob[:bestNum]

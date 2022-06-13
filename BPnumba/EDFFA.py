@@ -1,6 +1,6 @@
 from multiprocessing import reduction
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual, ind_type,CalcFi,InverseMutation,CrossOX,Combine2,Combine1
+from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual,ind_type,CalcFi,InverseMutation,CrossOX,Combine2,Combine1
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
@@ -24,6 +24,7 @@ def DAlphaStep(genome: List[int], alpha: int)->None:
     valuesV = NumbaList(np.asarray(np.random.choice(n,int(alpha),replace=False)+1,dtype=np.int64))
     for i in np.arange(int(alpha),dtype=np.int64):
         SwapPointValue(genome,indexV[i],valuesV[i])
+
 @njit
 def EBettaStep(f1: List[int], f2:  List[int], betta: int)->List[int]:
     n = len(f1)
@@ -33,6 +34,7 @@ def EBettaStep(f1: List[int], f2:  List[int], betta: int)->List[int]:
     else:
         end=int(init+betta)
     return CrossOX(f2,f1,init,end)
+    
 @njit
 def EAlphaStepC2(genome: List[int], alpha: int)->List[int]:
     n = int(len(genome))
@@ -47,6 +49,7 @@ def EAlphaStepC2(genome: List[int], alpha: int)->List[int]:
         index=np.random.randint(end+1,n)
     newcode = Combine2(genome,index,init,end)
     return newcode
+
 @njit
 def EAlphaStepC1(genome: List[int], alpha: int)->List[int]:
     n = int(len(genome))
@@ -59,7 +62,6 @@ def EAlphaStepC1(genome: List[int], alpha: int)->List[int]:
         init1=end+1
         fin1=init1+ int(alf/2)-1
         return Combine1(genome,init,end,init1,fin1)
-
     init = np.random.randint(int(n/2)-int(alf/2)+1)
     end = init + int(alf/2)-1
     init2 = np.random.randint(int(n/2),n-int(alf/2))
@@ -140,7 +142,7 @@ class EDFFA:
         firefly.genome = nwgn
 
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
-        newgen = NumbaList(EAlphaStepC1(firefly.genome, alpha))
+        newgen = NumbaList(EAlphaStepC2(firefly.genome, alpha))
         firefly.genome = newgen 
         CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
 

@@ -25,6 +25,7 @@ class Ind:
          self.codeSolution = ''
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
+
 @njit
 def create_intidivual(gen:List[int]):
     return Ind(gen)
