@@ -85,14 +85,16 @@ specEF['BestInd'] = ind_type
 specEF['bestfi'] = types.ListType(types.float64)
 specEF['gamma'] = types.float64
 specEF['__Heuristic'] = types.int64
+specEF['__MutType'] = types.int64
 @jitclass(specEF)
 class EDFFA:
-    def __init__(self, heuristic:int = 0):
+    def __init__(self, heuristic:int = 0,mutType:int=0):
         self.gamma = 0
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         self.__Heuristic= heuristic
-        
+        self.__MutType=mutType
+
     def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int])->Ind:
         fnum = len(fireflyPob)
         n = len(datos)
@@ -142,7 +144,12 @@ class EDFFA:
         firefly.genome = nwgn
 
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
-        newgen = NumbaList(EAlphaStepC2(firefly.genome, alpha))
+        if  self.__MutType == 1:
+            newgen = NumbaList(EAlphaStepC1(firefly.genome, alpha))
+        elif self.__MutType==2:
+            newgen = NumbaList(EAlphaStepC2(firefly.genome, alpha))
+        else:
+            newgen = NumbaList(EAlphaStep(firefly.genome, alpha))
         firefly.genome = newgen 
         CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
 
@@ -151,5 +158,5 @@ class EDFFA:
 
 EDFFA_type.define(EDFFA.class_type.instance_type)
 @njit
-def createEDFFA(heuristic:int=0)->EDFFA:
-    return EDFFA(heuristic)
+def createEDFFA(heuristic:int=0,mutType:int=0)->EDFFA:
+    return EDFFA(heuristic,mutType)

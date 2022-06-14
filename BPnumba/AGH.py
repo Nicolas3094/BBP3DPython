@@ -51,9 +51,10 @@ specAG['_prCross'] = types.float64
 specAG['BestInd'] = ind_type
 specAG['bestfi'] = types.ListType(types.float64)
 specAG['__Heuristic'] = types.int64
+specAG['__MutType'] = types.int64
 @jitclass(specAG)
 class NAG:
-    def __init__(self,ps:float,pc:float,pm:float=0,heuristic:int =0,adaptive=False):
+    def __init__(self,ps:float,pc:float,pm:float=0,heuristic:int =0,adaptive=False,mutationType:int=0):
         self._prSelect=ps
         self._prCross =pc
         if pm != 0 and not adaptive:
@@ -65,25 +66,24 @@ class NAG:
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
         self.__Heuristic = heuristic
+        self.__MutType = mutationType
 
     def Train(self,maxItr:int,pob:List[Ind],datos:List[List[int]],contenedor:List[int])->Ind:
-        
         max_pop = len(pob)
         rd :List[float]= []
+        self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
+        self.BestInd = Ind(NumbaList([1]))
 
         pob.sort(key=lambda  ind : ind.fi, reverse=True)
-
         for _ in np.arange(maxItr):
             self.NextGen(pob,datos,contenedor)
             pob = self.Elitism(pob,max_pop)
             rd.append(pob[0].fi)
-            if pob[0].fi == 1 or (pob[0].fi-pob[max_pop-1].fi)/ (pob[0].fi**2) <0.001 and pob[0].fi != pob[max_pop-1].fi:
+            if pob[0].fi == 1 or (pob[0].fi-pob[max_pop-1].fi)/(pob[0].fi**2) <=0.001:
                 break
-
         self.BestInd=pob[0]
         rd = np.array(rd,dtype=np.float64)
         self.bestfi = NumbaList(rd)
-
         return self.BestInd
 
     def NextGen(self,pob:List[Ind],datos,contenedor):
@@ -112,14 +112,13 @@ class NAG:
                     pm = 1-(pob[id1].fi+pob[id2].fi)/2
                 else:
                     pm = self._prMut
-
                 self.Mutation(NumbaList(h1),pm)
                 ind1 = create_intidivual(NumbaList(h1))
                 CalcFi(ind1,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
                 self.Mutation(NumbaList(h2),pm)
                 ind2 = create_intidivual(NumbaList(h2))
                 CalcFi(ind2,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
-
+                
                 if ind1.codeSolution not in existedPob:
                     pob.append(ind1)
                 if ind2.codeSolution not in existedPob:
@@ -137,10 +136,14 @@ class NAG:
 
     def Mutation(self,gene:List[int], pm:float):
         r = np.random.random()
-        if r <= pm:            
-            gene=MutateC2(NumbaList(gene))
-
-
+        if r <= pm:
+            if self.__MutType==1:
+                gene=MutateC1(NumbaList(gene))
+            elif self.__MutType==2:
+                gene=MutateC2(NumbaList(gene))
+            else:
+                gene= MutateInversion(NumbaList(gene))          
+          
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
         return pob[:bestNum]
           
@@ -154,8 +157,8 @@ def NotRepeated(h1:str,existedPob:List[str]):
     return True
 
 @njit
-def createAG(ps:float,pc:float,pm:float=0,heuristic:int=0,adaptive=False):
-    return NAG(ps,pc,pm,heuristic,adaptive)
+def createAG(ps:float,pc:float,pm:float=0,heuristic:int=0,adaptive=False,mutType:int=0):
+    return NAG(ps,pc,pm,heuristic,adaptive,mutType)
 ag_type = deferred_type()
 ag_type.define(NAG.class_type.instance_type)
 

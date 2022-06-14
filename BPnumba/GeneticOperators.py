@@ -43,46 +43,37 @@ def CreatePermutation(ls1:List[int])->List[int]:
 @njit #(nogil=True)
 def CreateHeuristicPob(num:int,Data:List[List[int]],bin:List[int],reversed=True)->List[List[int]]:
     Ub = len(Data)
-    convertedData= Data.copy()
-    numTypes = len(convertedData)
-    convertedData.sort(key=lambda x:x[0]*x[1]*x[2],reverse=reversed)
+    seq=np.arange(1,Ub+1)
+    convertedData= [ (Data[i],i+1) for i in np.arange(Ub,dtype=np.int64)]
+    
     poblation:list[list[int]] = []
-    seq:list[int]=[]
+    
+    convertedData.sort(key=lambda x:x[0][0]*x[0][1]*x[0][2],reverse=reversed)
+    nwsq = []
+    for i in np.arange(Ub):
+       nwsq.append(convertedData[i][1])
+    poblation.append(nwsq)
 
-    for data in convertedData:
-        for j in np.arange(len(convertedData)):
-            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
-                seq.append(j+1)
-                break
-    poblation.append(seq)
-    #Sort by X,Y and Z
-    convertedData.sort(key=lambda x:x[2],reverse=reversed)
-    seq=[]
-    for data in convertedData:
-        for j in np.arange(len(convertedData)):
-            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
-                seq.append(j+1)
-                break
-    poblation.append(seq)
-    convertedData.sort(key=lambda x:x[1],reverse=reversed)
-    seq=[]
-    for data in convertedData:
-        for j in np.arange(len(convertedData)):
-            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
-                seq.append(j+1)
-                break
-    poblation.append(seq)
-    convertedData.sort(key=lambda x:x[0],reverse=reversed)
-    seq=[]
-    for data in convertedData:
-        for j in np.arange(len(convertedData)):
-            if data[0] == Data[j][0] and  data[1] == Data[j][1] and  data[2] == Data[j][2]:
-                seq.append(j+1)
-                break
-    poblation.append(seq)
-    originalSeq = np.arange(1,len(convertedData)+1,dtype=np.int64)
+    convertedData.sort(key=lambda x:x[0][0],reverse=reversed)
+    nwsq = []
+    for i in np.arange(Ub):
+       nwsq.append(convertedData[i][1])
+    poblation.append(nwsq)
+
+    convertedData.sort(key=lambda x:x[0][1],reverse=reversed)
+    nwsq = []
+    for i in np.arange(Ub):
+       nwsq.append(convertedData[i][1])
+    poblation.append(nwsq)
+
+    convertedData.sort(key=lambda x:x[0][2],reverse=reversed)
+    nwsq = []
+    for i in np.arange(Ub):
+       nwsq.append(convertedData[i][1])
+    poblation.append(nwsq)
+    
     for _ in np.arange(num-4):
-        p = list(CreatePermutation(originalSeq))
+        p = list(CreatePermutation(seq))
         poblation.append(p)
     return poblation
 
