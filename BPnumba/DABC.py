@@ -13,21 +13,25 @@ def CreateUniformRandomSoltion(n: int, boxes: List[List[int]], container: List[i
     visited = [False for i in np.arange(n+1)]
     newcode = np.zeros(n, dtype=np.int64)
     for i in np.arange(n):
-        xj = round(xmin + np.random.uniform(0, 1)*(xmax-1))
-        if xj <= xmin:
-            xj = xmin
-            xmin += 1
-        elif xj >= xmax:
-            xj = xmax
-            xmax -= 1
+        xj = abs(round(xmin + np.random.uniform(0, 1)*(xmax-1)))
+        if xj > xmax:
+            xj -= xmin
+        if xj == xmax:
+            xmax-=1
+        if xj < xmin:
+            xj=xmin
+        if xj==xmin:
+            xmin +=1
         while visited[xj]:
-            xj = round(xmin + np.random.uniform(0, 1)*(xmax-1))
-            if xj <= xmin:
-                xj = xmin
-                xmin += 1
-            elif xj >= xmax:
-                xj = xmax
-                xmax -= 1
+            xj = abs(round(xmin + np.random.uniform(0, 1)*(xmax-1)))
+            if xj > xmax:
+                xj -= xmin
+            if xj == xmax:
+                xmax-=1
+            if xj < xmin:
+                xj=xmin
+            if xj==xmin:
+                xmin +=1
         newcode[i] = xj
         visited[xj] = True
     nwbee = create_intidivual(NumbaList(newcode))
@@ -103,8 +107,8 @@ class DABC:
         nwcd = ColonyWorker[i].genome.copy()
         vik = abs(round(ColonyWorker[i].genome[k] + np.random.uniform(-1, 1)*(ColonyWorker[i].genome[k]-beeJ.genome[k])))
         if vik > self.n:
-            vik = self.n
-        elif vik < 1:
+            vik -= self.n
+        if vik < 1:
             vik = 1
         SwapPointValue(nwcd,k,vik)
         return nwcd
@@ -115,7 +119,7 @@ class DABC:
 
     def OnlookerPhase(self,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int]):
         for _ in np.arange(self.pop_num):
-            j = RouletteWheel(ColonyWorker)
+            j = Tournament(ColonyWorker,pt=0.85)
             self.ImproveFlower(j,ColonyWorker,datos,contenedor)
     def ScoutPhase(self,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int]):
         maxFail = self.fail.copy()

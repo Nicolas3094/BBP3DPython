@@ -5,43 +5,9 @@ from numba import types, njit,deferred_type
 from numba.experimental import jitclass
 from typing import List
 from collections import OrderedDict
-from BPnumba.GeneticOperators import Combine2,Ind, ind_type,Tournament,CrossOX,InverseMutation,create_intidivual,CalcFi,CodeSolution,Combine1
+from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,create_intidivual,CalcFi,CodeSolution,MutateC1,MutateC2,MutateInversion
 
-@njit
-def MutateC2(genome: List[int], randomStep: int=0)->List[int]:
-    n = int(len(genome))
-    step=randomStep
-    if randomStep==0:
-        step = np.random.randint(1,n-2)
-    init = np.random.randint(1,int(n/2))
-    if init + step > n-2:
-        end = n-2
-    else:
-        end =  np.random.randint(init+1,n-1)
-    if np.random.random()<0.5:
-        index=np.random.randint(0,init)
-    else:
-        index=np.random.randint(end+1,n)
-    return Combine2(genome,index,init,end)
 
-@njit
-def MutateC1(gene:List[int],randomStep:int=0)->List[int]:
-    n=len(gene)
-    step=randomStep
-    if randomStep==0:
-        step = np.random.randint(1,n-2)
-    i=np.random.randint(int(n/2)-int(step/2)+1)
-    j = i + int(step/2)-1
-    i2 = np.random.randint(int(n/2),n-int(step/2))
-    j2 = i2 + int(step/2)-1
-    return Combine1(NumbaList(gene),i,j,i2,j2)
-
-@njit
-def MutateInversion(gene:List[int])->List[int]:
-    n=len(gene)
-    i= random.randrange(1,int(n/2))
-    j= random.randrange(i+1,n)
-    return InverseMutation(NumbaList(gene),i,j)
 
 
 specAG = OrderedDict()
@@ -73,7 +39,6 @@ class NAG:
         rd :List[float]= []
         self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
         self.BestInd = Ind(NumbaList([1]))
-
         pob.sort(key=lambda  ind : ind.fi, reverse=True)
         for _ in np.arange(maxItr):
             self.NextGen(pob,datos,contenedor)

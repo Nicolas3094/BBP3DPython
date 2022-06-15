@@ -23,13 +23,15 @@ def AlphaStep(genome: List[int], alpha: int)->None:
     for i in np.arange(n):
         tmp = genome[i]
         posVal = abs(round(genome[i] + alpha*(np.random.random()-0.5)))
+        if posVal > maxL:
+            posVal -= maxL
         if posVal < minL:
             posVal=minL
-            minL +=1
-        elif genome[i] > maxL:
-            posVal=maxL
-            maxL -=1
-        elif genome[i] == tmp:
+        if posVal == maxL:
+            maxL-=1
+        if posVal == minL:
+            minL+=1
+        if posVal == tmp:
             continue
         SwapPointValue(genome,i,posVal)
 

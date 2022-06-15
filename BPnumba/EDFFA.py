@@ -1,29 +1,12 @@
 from multiprocessing import reduction
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual,ind_type,CalcFi,InverseMutation,CrossOX,Combine2,Combine1
+from BPnumba.GeneticOperators import Hamming,Ind,ind_type,CalcFi,CrossOX,Combine2,MutateC1,MutateInversion
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
 from collections import OrderedDict
 from numba.experimental import jitclass
 from BPnumba.DFFA import LightInt
-
-@njit
-def DBettaStep(f1: List[int], f2:  List[int], betta: float)->None:
-    n = len(f1)
-    for i in np.arange(n):
-        if f1[i] == f2[i]:
-            continue
-        pr = np.random.random()
-        if pr < betta:
-            SwapPointValue(f1,i,f2[i])
-@njit
-def DAlphaStep(genome: List[int], alpha: int)->None:
-    n = len(genome)
-    indexV = NumbaList(np.asarray(np.random.choice(n,int(alpha), replace=False),dtype=np.int64))
-    valuesV = NumbaList(np.asarray(np.random.choice(n,int(alpha),replace=False)+1,dtype=np.int64))
-    for i in np.arange(int(alpha),dtype=np.int64):
-        SwapPointValue(genome,indexV[i],valuesV[i])
 
 @njit
 def EBettaStep(f1: List[int], f2:  List[int], betta: int)->List[int]:
@@ -49,35 +32,6 @@ def EAlphaStepC2(genome: List[int], alpha: int)->List[int]:
         index=np.random.randint(end+1,n)
     newcode = Combine2(genome,index,init,end)
     return newcode
-
-@njit
-def EAlphaStepC1(genome: List[int], alpha: int)->List[int]:
-    n = int(len(genome))
-    alf=alpha
-    if alpha % 2 != 0  and alpha != 0:
-        alf = alpha-1
-    if alpha== n:
-        init = 0
-        end = init + int(alf/2)-1
-        init1=end+1
-        fin1=init1+ int(alf/2)-1
-        return Combine1(genome,init,end,init1,fin1)
-    init = np.random.randint(int(n/2)-int(alf/2)+1)
-    end = init + int(alf/2)-1
-    init2 = np.random.randint(int(n/2),n-int(alf/2))
-    end2 = init2 + int(alf/2)-1
-
-    newcode =  Combine1(genome,init,end,init2,end2)
-    return newcode
-@njit
-def EAlphaStep(genome: List[int], alpha: int)->List[int]:
-    n = len(genome)
-    init = np.random.randint(1,n-2)
-    if init+alpha>n-1:
-        end=n-1
-    else:
-        end=init+alpha
-    return InverseMutation(genome,init,end)
 
 EDFFA_type = deferred_type()
 specEF = OrderedDict()
@@ -145,11 +99,11 @@ class EDFFA:
 
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
         if  self.__MutType == 1:
-            newgen = NumbaList(EAlphaStepC1(firefly.genome, alpha))
+            newgen = NumbaList(MutateC1(firefly.genome, alpha))
         elif self.__MutType==2:
             newgen = NumbaList(EAlphaStepC2(firefly.genome, alpha))
         else:
-            newgen = NumbaList(EAlphaStep(firefly.genome, alpha))
+            newgen = NumbaList(MutateInversion(firefly.genome, alpha))
         firefly.genome = newgen 
         CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
 

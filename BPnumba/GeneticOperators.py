@@ -312,3 +312,47 @@ def Combine2(gen:List[int],indexToInsert:int,i:int,j:int):
         return RIS(gen,indexToInsert,i,j)
     else:
         return RRIS(gen,indexToInsert,i,j)
+@njit
+def MutateC2(genome: List[int], randomStep: int=-1)->List[int]:
+    n = int(len(genome))
+    step=randomStep
+    if randomStep==-1:
+        step = np.random.randint(1,n-2)
+    elif randomStep<2 and randomStep>=0:
+        step=2
+    init = np.random.randint(1,int(n/2))
+    if init + step > n-2:
+        end = n-2
+    else:
+        end =  init+step-1
+    if np.random.random()<0.5:
+        index=np.random.randint(0,init)
+    else:
+        index=np.random.randint(end+1,n)
+    return Combine2(genome,index,init,end)
+
+@njit
+def MutateC1(gene:List[int],randomStep:int=-1)->List[int]:
+    n=len(gene)
+    step=randomStep
+    if randomStep==-1:
+        step = np.random.randint(1,n-2)
+    elif randomStep<2 and randomStep>=0:
+        step=2
+    i=np.random.randint(int(n/2)-int(step/2)+1)
+    j = i + int(step/2)-1
+    i2 = np.random.randint(int(n/2),n-int(step/2))
+    j2 = i2 + int(step/2)-1
+    return Combine1(NumbaList(gene),i,j,i2,j2)
+
+@njit
+def MutateInversion(gene:List[int],randomStep:int=-1)->List[int]:
+    n=len(gene)
+    step=randomStep
+    if randomStep==-1:
+        step = np.random.randint(1,n-2)
+    elif randomStep<2 and randomStep>=0:
+        step=2
+    i= random.randrange(1,int(n/2))
+    j= i+step-1
+    return InverseMutation(NumbaList(gene),i,j)

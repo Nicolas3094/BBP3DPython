@@ -46,7 +46,7 @@ def Test(boxes:List[List[List[int]]],bin:List[int],alg, maxItr: int, lst: List[L
             last = time.perf_counter() - time1      
         epochs = len(alg.bestfi)
         if heuristic == 0:
-            lst[i] = np.array([bestInd.fi, n-bestInd.load, epochs, last],dtype=np.float64)
+            lst[i] = np.array([bestInd.fi, n-bestInd.load, epochs, last, last/epochs],dtype=np.float64)
         else:
-            lst[20+i] = np.array([bestInd.fi, n-bestInd.load,epochs, last], dtype=np.float64) 
+            lst[20+i] = np.array([bestInd.fi, n-bestInd.load,epochs, last, last/epochs], dtype=np.float64) 
     

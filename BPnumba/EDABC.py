@@ -1,6 +1,6 @@
 import numpy as np
 from numba.typed import List as NumbaList
-from BPnumba.GeneticOperators import Tournament, ind_type,create_intidivual,CalcFi,Ind,CreatePermutation,Combine2
+from BPnumba.GeneticOperators import Tournament, ind_type,create_intidivual,CalcFi,Ind,CreatePermutation,MutateC2
 from numba import njit, deferred_type, types
 from typing import List
 import random
@@ -75,14 +75,7 @@ class EDABC:
             self.fail[i][1] += 1
  
     def ImproveB(self,i: int, ColonyWorker: List[Ind]):
-        n=self.n
-        init = np.random.randint(1,n-2)
-        end =  np.random.randint(init+1,n-1)
-        if np.random.random()<0.5:
-            index=np.random.randint(0,init)
-        else:
-           index=np.random.randint(end+1,n)
-        return Combine2(ColonyWorker[i].genome,index,init,end)
+        return MutateC2(ColonyWorker[i].genome)
 
     def WorkerBeePhase(self,ColonyWorker: List[Ind],datos:List[List[int]],contenedor:List[int])->None:
         for i in np.arange(self.pop_num):
@@ -90,7 +83,7 @@ class EDABC:
 
     def OnlookerPhase(self,ColonyWorker: List[Ind],datos:List[List[int]],contenedor:List[int])->None:
         for _ in np.arange(self.pop_num):
-            self.ImproveFlower(Tournament(ColonyWorker,0.9),ColonyWorker,datos,contenedor)
+            self.ImproveFlower(Tournament(ColonyWorker,0.85),ColonyWorker,datos,contenedor)
 
     def ScoutPhase(self,ColonyWorker: List[Ind],datos:List[List[int]],contenedor:List[int])->None:
         maxFail = self.fail.copy()
