@@ -24,7 +24,7 @@ class Bin:
         self.__n=0
         self.__orderBox = typed.List.empty_list(types.int64)
         self.__pos = typed.List.empty_list(typed.List.empty_list(types.int64))
-
+    
     def addBox(self, itemID:int, itemPos:List[int], itemDim:List[int]):
         self.__pos.append(itemPos)
         self.__orderBox.append(itemID)
