@@ -34,6 +34,7 @@ def ReduceDim(Data:List[List[int]],bin:List[int])->List[List[int]]:
 @njit(parallel=True)
 def Test(boxes:List[List[List[int]]],bin:List[int],alg, maxItr: int, lst: List[List[float]],heuristic:int=0):
     DATA = boxes.copy()
+
     for i in prange(20):
         DAT:List[List[int]]= NumbaList(DATA[i])
         n:int=len(DAT)
@@ -49,4 +50,3 @@ def Test(boxes:List[List[List[int]]],bin:List[int],alg, maxItr: int, lst: List[L
             lst[i] = np.array([bestInd.fi, n-bestInd.load, epochs, last, last/epochs],dtype=np.float64)
         else:
             lst[20+i] = np.array([bestInd.fi, n-bestInd.load,epochs, last, last/epochs], dtype=np.float64) 
-    

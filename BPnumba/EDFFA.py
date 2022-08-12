@@ -56,38 +56,25 @@ class EDFFA:
             self.gamma=1/n
         rd: List[float] = []
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
-        bestFF=0
+        bestFF=len(fireflyPob)-1
         self.BestInd = Ind(NumbaList([1]))
-        for i in np.arange(fnum):
-            if fireflyPob[i].fi > fireflyPob[bestFF].fi and bestFF != i:
-                bestFF=i
+        fireflyPob.sort(key=lambda x: x.fi)
+
         for _ in np.arange(Maxitr):
             alpha = np.floor(n-((_+1)/Maxitr)*(n))
-            prev = bestFF
-            for i in np.arange(fnum):
-                if bestFF ==i:
-                    continue
-                dist = Hamming(NumbaList(fireflyPob[bestFF].genome), NumbaList(fireflyPob[i].genome))
-                Ii = LightInt(fireflyPob[i].fi, self.gamma, dist)
-                Ij = LightInt(fireflyPob[bestFF].fi, self.gamma,  dist)
-                if Ij > Ii:
-                    self.MoveFF(fireflyPob[i], fireflyPob[bestFF], dist)
-                    CalcFi(fireflyPob[i], datos, contenedor,self.__Heuristic)
-                    #self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
-                    if fireflyPob[i].fi > fireflyPob[bestFF].fi:
-                        bestFF = i
-                else:
-                    self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
-                    if fireflyPob[i].fi > fireflyPob[bestFF].fi:
-                        bestFF = i
+            for i in np.arange(fnum-1):
+                for j in np.arange(i+1,fnum):
+                    dist = Hamming(NumbaList(fireflyPob[j].genome), NumbaList(fireflyPob[i].genome))
+                    Ii = LightInt(fireflyPob[i].fi, self.gamma, dist)
+                    Ij = LightInt(fireflyPob[j].fi, self.gamma,  dist)
+                    if Ij > Ii:
+                        self.MoveFF(fireflyPob[i], fireflyPob[j], dist)
+                        CalcFi(fireflyPob[i], datos, contenedor,self.__Heuristic)
             rd.append(fireflyPob[bestFF].fi)
             if fireflyPob[bestFF].fi == 1:
                 break
-            #if prev == bestFF:
-            #    self.RandomMove(fireflyPob[bestFF],alpha,datos,contenedor)
-            #    for i in np.arange(fnum):
-            #        if fireflyPob[i].fi > fireflyPob[bestFF].fi and bestFF != i:
-            #            bestFF=i
+            self.RandomMove(fireflyPob[bestFF], alpha, datos, contenedor)
+            fireflyPob.sort(key=lambda x: x.fi)
         self.BestInd = fireflyPob[bestFF]
         rd = np.array(rd, dtype=np.float64)
         self.bestfi = NumbaList(rd)

@@ -13,6 +13,8 @@ sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
 sepecInd['genome'] = types.ListType(types.int64)
 sepecInd['load'] = types.int64
+
+sepecInd['hist'] = types.ListType(types.float64)
 sepecInd['BinBoxes'] = types.ListType(types.int64)
 sepecInd['codeSolution'] =  types.string
 @jitclass(sepecInd)
@@ -22,6 +24,7 @@ class Ind:
          self.genome = genome
          self.load = 0
          self.BinBoxes = NumbaList(np.array([0],dtype=np.int64))
+         self.hist = NumbaList(np.array([0],dtype=np.float64))
          self.codeSolution = ''
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
