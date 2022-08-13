@@ -14,23 +14,23 @@ sepecInd['fi'] = types.float64
 sepecInd['genome'] = types.ListType(types.int64)
 sepecInd['load'] = types.int64
 
-sepecInd['hist'] = types.ListType(types.float64)
+sepecInd['rot'] = types.ListType(types.int64)
 sepecInd['BinBoxes'] = types.ListType(types.int64)
 sepecInd['codeSolution'] =  types.string
 @jitclass(sepecInd)
 class Ind:
-    def __init__(self,genome:List[int] ):
+    def __init__(self,genome:List[int],rotations:List[int] ):
          self.fi:float = 0
          self.genome = genome
          self.load = 0
          self.BinBoxes = NumbaList(np.array([0],dtype=np.int64))
-         self.hist = NumbaList(np.array([0],dtype=np.float64))
+         self.rot = rotations
          self.codeSolution = ''
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
 
 @njit
-def create_intidivual(gen:List[int]):
+def create_intidivual(gen:List[int],rotations:List[int]=[0]):
     return Ind(gen)
 
 @njit 
@@ -354,7 +354,7 @@ def MutateInversion(gene:List[int],randomStep:int=-1)->List[int]:
     step=randomStep
     if randomStep==-1:
         step = np.random.randint(1,n-2)
-    elif randomStep<2 and randomStep>=0:
+    elif randomStep<2:
         step=2
     i= random.randrange(1,int(n/2))
     j= i+step-1

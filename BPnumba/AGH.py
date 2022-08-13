@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import random
 from numba.typed import List as NumbaList
@@ -36,60 +37,60 @@ class NAG:
 
     def Train(self,maxItr:int,pob:List[Ind],datos:List[List[int]],contenedor:List[int])->Ind:
         max_pop = len(pob)
-        rd :List[float]= []
-        self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
-        self.BestInd = Ind(NumbaList([1]))
+        self.bestfi:List[float] = NumbaList(np.ones(maxItr,dtype=np.float64))
         pob.sort(key=lambda  ind : ind.fi, reverse=True)
         for _ in np.arange(maxItr):
-            self.NextGen(pob,datos,contenedor)
-            pob = self.Elitism(pob,max_pop)
-            rd.append(pob[0].fi)
-            if pob[0].fi == 1 or (pob[0].fi-pob[max_pop-1].fi)/(pob[0].fi**2) <=0.001:
+            pob = self.NextGen(pob,datos,contenedor)
+            self.bestfi[_]=pob[0].fi
+            if pob[0].fi == 1:
+                break
+            if (pob[0].fi-pob[max_pop-1].fi)/(pob[0].fi**2) <=0.001:
+                for _ in np.arange(_+1,maxItr):
+                    self.bestfi[_]=pob[0].fi
                 break
         self.BestInd=pob[0]
-        rd = np.array(rd,dtype=np.float64)
-        self.bestfi = NumbaList(rd)
         return self.BestInd
 
-    def NextGen(self,pob:List[Ind],datos,contenedor):
+    def NextGen(self,pob:List[Ind],datos,contenedor)->List[Ind]:
         n = len(pob)
-        k = np.random.randint(int(n/2),n) #numero de individuos intentar por crear por pares
-        existedPob = [ind.codeSolution for ind in pob]
-        if k % 2 != 0:
-            k -=1
-        for i in np.arange(k):
-            if pob[i].codeSolution == pob[i+1].codeSolution:
-               pob[i+1].fi=0
+        k = np.random.randint(n/4,n/2)
+        visitedParent = list(np.arange(k))
+        nwgn:list[Ind] = pob[:k]
+
+        while len(nwgn)<n:
             id1 = self.Selection(pob)
             id2 = self.Selection(pob)
-            while id2 == id1:
+            while id2 == id1 :
                 id2 = self.Selection(pob)
-            if pob[id1].codeSolution == pob[id2].codeSolution:
-                if id1 < id2:
-                    pob[id2].fi = 0
-                else:
-                    pob[id1].fi = 0
+            if id1 not in visitedParent:
+                nwgn.append(pob[id1])
+                visitedParent.append(id1)
+            if id2 not in visitedParent:
+                nwgn.append(pob[id2])
+                visitedParent.append(id2)
             if np.random.random() <= self._prCross:
-                h1 = self.Crossover(pob[id1],pob[id2])
-                h2 = self.Crossover(pob[id2],pob[id1])
                 pm = 0
                 if self._prMut == 1:
                     pm = 1-(pob[id1].fi+pob[id2].fi)/2
                 else:
                     pm = self._prMut
-                self.Mutation(NumbaList(h1),pm)
-                ind1 = create_intidivual(NumbaList(h1))
-                CalcFi(ind1,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
-                self.Mutation(NumbaList(h2),pm)
-                ind2 = create_intidivual(NumbaList(h2))
-                CalcFi(ind2,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
                 
-                if ind1.codeSolution not in existedPob:
-                    pob.append(ind1)
-                if ind2.codeSolution not in existedPob:
-                    pob.append(ind2)
+                h1 = self.Crossover(pob[id1],pob[id2])
+                h1=self.Mutation(NumbaList(h1),pm)
+                if h1 != pob[id1].genome and h1 != pob[id2].genome:
+                    ind1 = create_intidivual(NumbaList(h1))
+                    CalcFi(ind1,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
+                    nwgn.append(ind1)
 
-        pob.sort(key=lambda ind : ind.fi, reverse=True)
+                h2 = self.Crossover(pob[id2],pob[id1])
+                h2=self.Mutation(NumbaList(h2),pm)
+                if h2 != pob[id1].genome and h2 != pob[id2].genome:
+                    ind2 = create_intidivual(NumbaList(h2))
+                    CalcFi(ind2,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
+                    nwgn.append(ind2)
+        nwgn.sort(key=lambda ind : ind.fi, reverse=True)
+        return nwgn[:n]
+
     def Selection(self,poblation:List[Ind])->int:
         return Tournament(poblation,self._prSelect)
     def Crossover(self,ind1:Ind,ind2:Ind)->List[int]:
@@ -99,15 +100,13 @@ class NAG:
         resp = CrossOX(ind1.genome,ind2.genome,i,j)
         return resp
 
-    def Mutation(self,gene:List[int], pm:float):
-        r = np.random.random()
-        if r <= pm:
+    def Mutation(self,gene:List[int], pm:float)->List[int]:       
             if self.__MutType==1:
-                gene=MutateC1(NumbaList(gene))
+                return MutateC1(NumbaList(gene),len(gene)*round(pm))
             elif self.__MutType==2:
-                gene=MutateC2(NumbaList(gene))
+                return MutateC2(NumbaList(gene),len(gene)*round(pm))
             else:
-                gene= MutateInversion(NumbaList(gene))          
+                return MutateInversion(NumbaList(gene),len(gene)*round(pm))          
           
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
         return pob[:bestNum]

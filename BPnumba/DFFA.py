@@ -1,11 +1,35 @@
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,SwapPointValue,Ind, create_intidivual, ind_type,CalcFi,InverseMutation,CrossOX
+from BPnumba.GeneticOperators import Hamming,Ind, SwapPointValue,ind_type,CalcFi,CrossOX,Combine2,MutateC1,MutateInversion
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
 from collections import OrderedDict
 from numba.experimental import jitclass
 
+@njit
+def EBettaStep(f1: List[int], f2:  List[int], betta: int)->List[int]:
+    n = len(f1)
+    init = np.random.randint(0,n-2) #Existe la posibilidad que el punto inicial casi al final del genoma
+    if init + betta > n-1:
+        end=int(n-1)
+    else:
+        end=int(init+betta)
+    return CrossOX(f2,f1,init,end)
+    
+@njit
+def EAlphaStepC2(genome: List[int], alpha: int)->List[int]:
+    n = int(len(genome))
+    init = np.random.randint(1,int(n/2))
+    if init + alpha > n-2:
+        end = n-2
+    else:
+        end =  np.random.randint(init+1,n-1)
+    if np.random.random()<0.5:
+        index=np.random.randint(0,init)
+    else:
+        index=np.random.randint(end+1,n)
+    newcode = Combine2(genome,index,init,end)
+    return newcode
 @njit
 def BettaStep(f1: List[int], f2:  List[int], betta: float)->None:
     n = len(f1)
@@ -46,13 +70,17 @@ specF['BestInd'] = ind_type
 specF['bestfi'] = types.ListType(types.float64)
 specF['gamma'] = types.float64
 specF['__Heuristic'] = types.int64
+specF['__MutType'] = types.int64
+
 @jitclass(specF)
 class DFFA:
-    def __init__(self, heuristic:int = 0):
+    def __init__(self, heuristic:int = 0,mutType:int=0):
         self.gamma = 0
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         self.__Heuristic= heuristic
+        self.__MutType=mutType
+
     def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int])->Ind:
         fnum = len(fireflyPob)
         self.BestInd = Ind(NumbaList([1]))
@@ -81,15 +109,35 @@ class DFFA:
         rd = np.array(rd, dtype=np.float64)
         self.bestfi = NumbaList(rd)
         return self.BestInd
+
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist:float)->None:
         betta: float = 1/(1+self.gamma*dist*dist)
-        BettaStep(firefly.genome, ObjFirerly.genome, betta)
+        if self.__MutType!=0:
+            beta:int = int(len(firefly.genome)*betta)
+            nwgn = NumbaList(EBettaStep(firefly.genome, ObjFirerly.genome, beta))
+            firefly.genome = nwgn
+        else:
+            BettaStep(firefly.genome, ObjFirerly.genome, betta)
+
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
-        AlphaStep(firefly.genome, alpha)  # n2
+        if  self.__MutType == 1:
+            newgen = NumbaList(MutateC1(firefly.genome, alpha))
+            firefly.genome = newgen 
+        elif self.__MutType==2:
+            newgen = NumbaList(EAlphaStepC2(firefly.genome, alpha))
+            firefly.genome = newgen 
+        elif self.__MutType==3:
+            newgen = NumbaList(MutateInversion(firefly.genome, alpha))
+            firefly.genome = newgen 
+        else:
+            AlphaStep(firefly.genome, alpha)  # n2
+
         CalcFi(firefly, DataBoxes, BinData,self.__Heuristic)
+
     def SelectHeuristic(self, hID:int)->None:
         self.__Heuristic= hID
+
 DFFA_type.define(DFFA.class_type.instance_type)
 @njit
-def createDFFA(heuristic:int=0)->DFFA:
+def createDFFA(heuristic:int=0,mutType:int=0)->DFFA:
     return DFFA(heuristic)
