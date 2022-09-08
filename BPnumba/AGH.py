@@ -1,4 +1,3 @@
-import re
 import numpy as np
 import random
 from numba.typed import List as NumbaList
@@ -27,7 +26,7 @@ class NAG:
         if pm != 0 and not adaptive:
             self._prMut=pm
         elif pm ==0 and adaptive:
-            self._prMut=1
+            self._prMut=1.0
         else:
             raise Exception("Parameter of GA. pm is 0 iif adaptive is True.")
         self.BestInd = Ind(NumbaList([1]))
@@ -69,14 +68,15 @@ class NAG:
                 nwgn.append(pob[id2])
                 visitedParent.append(id2)
             if np.random.random() <= self._prCross:
-                pm = 0
-                if self._prMut == 1:
-                    pm = 1-(pob[id1].fi+pob[id2].fi)/2
+                pm:float = 0.0
+                if self._prMut == 1.0:
+                    pm = 1.0-(pob[id1].fi+pob[id2].fi)/2
                 else:
                     pm = self._prMut
-                
                 h1 = self.Crossover(pob[id1],pob[id2])
+
                 h1=self.Mutation(NumbaList(h1),pm)
+                
                 if h1 != pob[id1].genome and h1 != pob[id2].genome:
                     ind1 = create_intidivual(NumbaList(h1))
                     CalcFi(ind1,NumbaList(datos),NumbaList(contenedor),self.__Heuristic)
@@ -99,14 +99,23 @@ class NAG:
         j= random.randrange(i+1,n)
         resp = CrossOX(ind1.genome,ind2.genome,i,j)
         return resp
-
-    def Mutation(self,gene:List[int], pm:float)->List[int]:       
+    def MutationRange(self,gene:List[int], pm) -> List[int]:
+        n:int=len(gene)
+        if self.__MutType==1:
+            return MutateC1(NumbaList(gene),round(pm*n))
+        elif self.__MutType==2:
+            return MutateC2(NumbaList(gene),round(pm*n))
+        else:
+            return MutateInversion(NumbaList(gene),round(pm*n))
+    def Mutation(self,gene:List[int], pm:float)->List[int]: 
+            if random.random() > pm:
+                return gene.copy()
             if self.__MutType==1:
-                return MutateC1(NumbaList(gene),len(gene)*round(pm))
+                return MutateC1(NumbaList(gene))
             elif self.__MutType==2:
-                return MutateC2(NumbaList(gene),len(gene)*round(pm))
+                return MutateC2(NumbaList(gene))
             else:
-                return MutateInversion(NumbaList(gene),len(gene)*round(pm))          
+                return MutateInversion(NumbaList(gene))          
           
     def Elitism(self,pob:List[Ind],bestNum:int)->List[Ind]:
         return pob[:bestNum]

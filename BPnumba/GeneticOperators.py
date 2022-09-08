@@ -13,24 +13,21 @@ sepecInd = OrderedDict()
 sepecInd['fi'] = types.float64
 sepecInd['genome'] = types.ListType(types.int64)
 sepecInd['load'] = types.int64
-
-sepecInd['rot'] = types.ListType(types.int64)
 sepecInd['BinBoxes'] = types.ListType(types.int64)
 sepecInd['codeSolution'] =  types.string
 @jitclass(sepecInd)
 class Ind:
-    def __init__(self,genome:List[int],rotations:List[int] ):
+    def __init__(self,genome:List[int]):
          self.fi:float = 0
          self.genome = genome
          self.load = 0
          self.BinBoxes = NumbaList(np.array([0],dtype=np.int64))
-         self.rot = rotations
          self.codeSolution = ''
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
 
 @njit
-def create_intidivual(gen:List[int],rotations:List[int]=[0]):
+def create_intidivual(gen:List[int]):
     return Ind(gen)
 
 @njit 
