@@ -1,6 +1,6 @@
 import numpy as np
 from numba.typed import List as NumbaList
-from BPnumba.GeneticOperators import RouletteWheel,Tournament, ind_type,SwapPointValue,create_intidivual,CalcFi,Ind,Combine1,Combine2
+from BPnumba.GeneticOperators import Tournament, ind_type,SwapPointValue,create_intidivual,CalcFi,Ind
 from numba import njit, deferred_type, types
 from typing import List
 import random
@@ -60,32 +60,27 @@ class DABC:
         self.__Heuristic = heuristic
 
     def Train(self,numItr: int, ColonyWorker: List[Ind], datos:List[List[int]], contenedor:List[int]):
-        self.BestInd = Ind(NumbaList([1]))
-        rd :List[float]= []
         self.pop_num = len(ColonyWorker)
         self.n = len(datos)
         listaL = [ NumbaList([i,0]) for i in np.arange(self.pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
-        self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
-        self.Limit = self.pop_num*self.n
+        self.bestfi:List[float] = NumbaList(np.ones(numItr,dtype=np.float64))
+        self.BestInd = Ind(NumbaList([1]))
+        self.Limit = round(np.sqrt(self.pop_num*self.n))
         for bee in ColonyWorker:
             if bee.fi > self.BestInd.fi:
                 self.BestInd=bee
         for _ in np.arange(numItr):
-
             # Busqueda local de abejas para todas las trabajadoras 
             self.WorkerBeePhase(ColonyWorker=ColonyWorker,datos=datos,contenedor=contenedor)
             # Busqueda Onlooker bee
             self.OnlookerPhase(ColonyWorker=ColonyWorker,datos=datos,contenedor=contenedor)
             #Busqueda de mejoras de acuerdo al Limite
             self.ScoutPhase(ColonyWorker=ColonyWorker,datos=datos,contenedor=contenedor)
-            self.bestfi = NumbaList(rd)
-            rd.append(self.BestInd.fi)
+            self.bestfi[_]=self.BestInd.fi
             if self.BestInd.fi == 1:
                 break    
 
-        rd = np.array(rd,dtype=np.float64)
-        self.bestfi = NumbaList(rd)
         return self.BestInd
     
     def ImproveFlower(self,i:int,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int]):

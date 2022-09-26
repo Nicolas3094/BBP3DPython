@@ -74,7 +74,7 @@ specF['__MutType'] = types.int64
 
 @jitclass(specF)
 class DFFA:
-    def __init__(self, heuristic:int = 0,mutType:int=0):
+    def __init__(self, heuristic:int,mutType:int):
         self.gamma = 0
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
@@ -83,12 +83,11 @@ class DFFA:
 
     def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int])->Ind:
         fnum = len(fireflyPob)
-        self.BestInd = Ind(NumbaList([1]))
         n = len(datos)
-        rd: List[float] = []
-        self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
+        self.bestfi: List[float] = NumbaList(np.ones(Maxitr, dtype=np.float64))
         self.gamma=1/n
         fireflyPob.sort(key=lambda x: x.fi)
+        self.BestInd = fireflyPob[-1]
         for _ in np.arange(Maxitr):
             alpha = np.floor(n-((_+1)/Maxitr)*(n))
             for i in np.arange(fnum-1):
@@ -99,25 +98,19 @@ class DFFA:
                     if Ii < Ij:
                         self.MoveFF(fireflyPob[i], fireflyPob[j], dist)
                         self.RandomMove(fireflyPob[i], alpha, datos, contenedor)
-            rd.append(fireflyPob[fnum-1].fi)
-            if fireflyPob[fnum-1].fi == 1:
-                self.BestInd = fireflyPob[fnum-1]
-                break
-            self.RandomMove(fireflyPob[fnum-1], alpha, datos, contenedor)    
             fireflyPob.sort(key=lambda x: x.fi)
+            if(self.BestInd.fi<fireflyPob[-1].fi):
+                self.BestInd = fireflyPob[-1]
+            self.bestfi[_] =fireflyPob[-1].fi
+            if fireflyPob[-1].fi == 1:
+                break
+            #self.RandomMove(fireflyPob[-1], alpha, datos, contenedor)    
         self.BestInd = fireflyPob[fnum-1]
-        rd = np.array(rd, dtype=np.float64)
-        self.bestfi = NumbaList(rd)
         return self.BestInd
 
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist:float)->None:
         betta: float = 1/(1+self.gamma*dist*dist)
-        if self.__MutType!=0:
-            beta:int = int(len(firefly.genome)*betta)
-            nwgn = NumbaList(EBettaStep(firefly.genome, ObjFirerly.genome, beta))
-            firefly.genome = nwgn
-        else:
-            BettaStep(firefly.genome, ObjFirerly.genome, betta)
+        BettaStep(firefly.genome, ObjFirerly.genome, betta)
 
     def RandomMove(self, firefly:Ind,alpha:int,DataBoxes:List[List[int]],BinData:List[int])->None:
         if  self.__MutType == 1:
@@ -140,4 +133,4 @@ class DFFA:
 DFFA_type.define(DFFA.class_type.instance_type)
 @njit
 def createDFFA(heuristic:int=0,mutType:int=0)->DFFA:
-    return DFFA(heuristic)
+    return DFFA(heuristic,mutType)

@@ -30,21 +30,19 @@ class EDABC:
 
     def Train(self,numItr: int, ColonyWorker: List[Ind], datos:List[List[int]], contenedor:List[int])->Ind:
         
-        rd :List[float]= []
         self.pop_num = len(ColonyWorker)
         self.n = len(datos)
         listaL = [ NumbaList([i,0]) for i in np.arange(self.pop_num)]
         self.fail:List[List[int]] = NumbaList(listaL)
-        self.bestfi:List[float] = NumbaList(np.zeros(1,dtype=np.float64))
-        self.Limit = self.pop_num*self.n
+        self.bestfi:List[float] = NumbaList(np.ones(numItr,dtype=np.float64))
         self.BestInd = Ind(NumbaList([1]))
-
+        self.Limit = round(np.sqrt(self.pop_num*self.n))
+        
         for bee in ColonyWorker:
             if bee.fi > self.BestInd.fi:
                 self.BestInd=bee
         
         for _ in np.arange(numItr):
-            
             # Busqueda local de abejas para todas las trabajadoras y calcila Pi
             self.WorkerBeePhase(ColonyWorker,datos,contenedor)
 
@@ -54,22 +52,19 @@ class EDABC:
             #Busqueda de mejoras de acuerdo al Limite
             self.ScoutPhase(ColonyWorker,datos,contenedor)
 
-            rd.append(self.BestInd.fi)
+            self.bestfi[_]=self.BestInd.fi
 
             if self.BestInd.fi == 1:
                 break
             
-        rd = np.array(rd,dtype=np.float64)
-        self.bestfi = NumbaList(rd)
-
         return self.BestInd
 
     def ImproveFlower(self,i:int,ColonyWorker:List[Ind],datos:List[List[int]],contenedor:List[int])->None:
         nwGen = self.ImproveB(i, ColonyWorker)
         newBee = create_intidivual(NumbaList(nwGen))
         CalcFi(newBee, datos, contenedor,self.__Heuristic)
-        ColonyWorker[i] = newBee
         if newBee.fi > ColonyWorker[i].fi:
+            ColonyWorker[i] = newBee
             self.fail[i][1] =0
         else:
             self.fail[i][1] += 1

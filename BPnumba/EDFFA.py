@@ -1,6 +1,7 @@
 from multiprocessing import reduction
+from turtle import up
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,Ind,ind_type,CalcFi,CrossOX,Combine2,MutateC1,MutateInversion
+from BPnumba.GeneticOperators import Hamming,Ind, create_intidivual,ind_type,CalcFi,CrossOX,Combine2,MutateC1,MutateInversion
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
@@ -37,50 +38,64 @@ EDFFA_type = deferred_type()
 specEF = OrderedDict()
 specEF['BestInd'] = ind_type
 specEF['bestfi'] = types.ListType(types.float64)
-specEF['gamma'] = types.float64
+specEF['m'] = types.int64
 specEF['__Heuristic'] = types.int64
 specEF['__MutType'] = types.int64
 @jitclass(specEF)
 class EDFFA:
     def __init__(self, heuristic:int = 0,mutType:int=0):
-        self.gamma = 0
+        self.m = 0
         self.BestInd = Ind(NumbaList([1]))
         self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
         self.__Heuristic= heuristic
         self.__MutType=mutType
 
-    def Train(self, Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int])->Ind:
+    def Train(self,upIndex:int , Maxitr: int, fireflyPob: List[Ind], datos: List[List[int]], contenedor: List[int])->Ind:
         fnum = len(fireflyPob)
         n = len(datos)
-        if self.gamma==0:
-            self.gamma=1/n
-        rd: List[float] = []
-        self.bestfi: List[float] = NumbaList(np.zeros(1, dtype=np.float64))
-        bestFF=len(fireflyPob)-1
+        self.m=upIndex
+        gamma=1/n
+        self.bestfi: List[float] = NumbaList(np.ones(Maxitr, dtype=np.float64))
         self.BestInd = Ind(NumbaList([1]))
-        fireflyPob.sort(key=lambda x: x.fi)
+        tmp:list[Ind] =[]
+        fireflyPob.sort(key=lambda x:x.fi,reverse=True)
 
         for _ in np.arange(Maxitr):
-            alpha = np.floor(n-((_+1)/Maxitr)*(n))
-            for i in np.arange(fnum-1):
-                for j in np.arange(i+1,fnum):
+            for i in np.arange(fnum):
+                mostAttractiveFF:int = -1
+                IAtr = -1.0
+                for j in np.arange(fnum):
+                    if(i==j): continue
                     dist = Hamming(NumbaList(fireflyPob[j].genome), NumbaList(fireflyPob[i].genome))
-                    Ii = LightInt(fireflyPob[i].fi, self.gamma, dist)
-                    Ij = LightInt(fireflyPob[j].fi, self.gamma,  dist)
-                    if Ij > Ii:
-                        self.MoveFF(fireflyPob[i], fireflyPob[j], dist)
-                        CalcFi(fireflyPob[i], datos, contenedor,self.__Heuristic)
-            rd.append(fireflyPob[bestFF].fi)
-            if fireflyPob[bestFF].fi == 1:
-                break
-            self.RandomMove(fireflyPob[bestFF], alpha, datos, contenedor)
-            fireflyPob.sort(key=lambda x: x.fi)
-        self.BestInd = fireflyPob[bestFF]
-        rd = np.array(rd, dtype=np.float64)
-        self.bestfi = NumbaList(rd)
+                    Ii = LightInt(fireflyPob[i].fi, gamma, dist)
+                    Ij = LightInt(fireflyPob[j].fi, gamma,  dist)
+                    if Ij > Ii and Ij>0.01:
+                        if(mostAttractiveFF==-1):
+                            mostAttractiveFF=j
+                            IAtr=Ij
+                        else:
+                            if IAtr < Ij:
+                                mostAttractiveFF = j
+                                IAtr = Ij
+                for k in np.arange(self.m):
+                    newFF:Ind=create_intidivual(fireflyPob[i].genome.copy())
+                    if(IAtr==-1.0): 
+                        self.RandomMove(newFF,-1,datos,contenedor)
+                    else:
+                        self.MoveFF(newFF,fireflyPob[mostAttractiveFF],IAtr)
+                        CalcFi(newFF, datos, contenedor,self.__Heuristic)
+                    tmp.append(newFF)
+            tmp.append(fireflyPob[0])
+            tmp.sort(key=lambda x:x.fi,reverse=True)
+            fireflyPob = tmp[:fnum]
+            self.bestfi[_]=fireflyPob[0].fi
+            tmp.clear()
+            if(self.bestfi[_]==1):
+               break 
+        self.BestInd = fireflyPob[0]
         return self.BestInd
     def MoveFF(self, firefly:Ind, ObjFirerly:Ind,dist)->None:
-        betta = int(len(firefly.genome)*(1/(1+self.gamma*dist*dist))) #pasos que dependen de dist y gamma
+        betta = int(len(firefly.genome)*(dist)) #pasos que dependen de dist y gamma
         nwgn = NumbaList(EBettaStep(firefly.genome, ObjFirerly.genome, betta))
         firefly.genome = nwgn
 
