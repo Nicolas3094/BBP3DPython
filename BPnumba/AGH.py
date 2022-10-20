@@ -5,8 +5,9 @@ from numba import types, njit,deferred_type
 from numba.experimental import jitclass
 from typing import List
 from collections import OrderedDict
-from BPnumba.GeneticOperators import Ind, ind_type,Tournament,CrossOX,create_intidivual,CalcFi,CodeSolution,MutateC1,MutateC2,MutateInversion
-
+from BPnumba.GeneticOperators import CrossOX,MutateC1,MutateC2,MutateInversion
+from BPnumba.Selection import Tournament
+from BPnumba.Individual import Ind, ind_type,create_intidivual,CalcFi,CodeSolution
 
 
 

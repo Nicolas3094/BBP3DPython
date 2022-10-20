@@ -1,6 +1,8 @@
 import numpy as np
 from numba.typed import List as NumbaList
-from BPnumba.GeneticOperators import Tournament, ind_type,SwapPointValue,create_intidivual,CalcFi,Ind
+from BPnumba.GeneticOperators import SwapPointValue
+from BPnumba.Selection import Tournament
+from BPnumba.Individual import ind_type,create_intidivual,CalcFi,Ind
 from numba import njit, deferred_type, types
 from typing import List
 import random

@@ -1,7 +1,11 @@
 from multiprocessing import reduction
 from turtle import up
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,Ind, create_intidivual,ind_type,CalcFi,CrossOX,Combine2,MutateC1,MutateInversion
+
+from BPnumba.GeneticOperators import Hamming,CrossOX,Combine2,MutateC1,MutateInversion
+from BPnumba.Selection import Tournament
+from BPnumba.Individual import ind_type,create_intidivual,CalcFi,Ind,CalcFi
+
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List

@@ -1,111 +1,10 @@
 import numpy as np
 import random
-from numba import types, njit,deferred_type,objmode, prange
+from numba import types, njit
 from typing import List
-from numba.experimental import jitclass
 from numba.typed import List as NumbaList
-from collections import OrderedDict
+from BPnumba.BoxN import ItemBin
 from BPnumba.BPPH import create_Bin,DBLF,DBLF2
-import time
-
-
-sepecInd = OrderedDict()
-sepecInd['fi'] = types.float64
-sepecInd['genome'] = types.ListType(types.int64)
-sepecInd['load'] = types.int64
-sepecInd['BinBoxes'] = types.ListType(types.int64)
-sepecInd['codeSolution'] =  types.string
-@jitclass(sepecInd)
-class Ind:
-    def __init__(self,genome:List[int]):
-         self.fi:float = 0
-         self.genome = genome
-         self.load = 0
-         self.BinBoxes = NumbaList(np.array([0],dtype=np.int64))
-         self.codeSolution = ''
-ind_type = deferred_type()
-ind_type.define(Ind.class_type.instance_type)
-
-@njit
-def create_intidivual(gen:List[int]):
-    return Ind(gen)
-
-@njit 
-def CodeSolution(idLoaded:List[int])->types.unicode_type:
-    st = "|"
-    for i in np.arange(len(idLoaded)):
-        st += str(idLoaded[i])+"|"
-    return st
-
-@njit
-def CreatePermutation(ls1:List[int])->List[int]:
-    return np.asarray(np.random.choice(ls1,len(ls1), replace=False),dtype=np.int64)
-@njit #(nogil=True)
-def CreateHeuristicPob(num:int,Data:List[List[int]],bin:List[int],reversed=True)->List[List[int]]:
-    Ub = len(Data)
-    seq=np.arange(1,Ub+1)
-    convertedData= [ (Data[i],i+1) for i in np.arange(Ub,dtype=np.int64)]
-    
-    poblation:list[list[int]] = []
-    
-    convertedData.sort(key=lambda x:x[0][0]*x[0][1]*x[0][2],reverse=reversed)
-    nwsq = []
-    for i in np.arange(Ub):
-       nwsq.append(convertedData[i][1])
-    poblation.append(nwsq)
-
-    convertedData.sort(key=lambda x:x[0][0],reverse=reversed)
-    nwsq = []
-    for i in np.arange(Ub):
-       nwsq.append(convertedData[i][1])
-    poblation.append(nwsq)
-
-    convertedData.sort(key=lambda x:x[0][1],reverse=reversed)
-    nwsq = []
-    for i in np.arange(Ub):
-       nwsq.append(convertedData[i][1])
-    poblation.append(nwsq)
-
-    convertedData.sort(key=lambda x:x[0][2],reverse=reversed)
-    nwsq = []
-    for i in np.arange(Ub):
-       nwsq.append(convertedData[i][1])
-    poblation.append(nwsq)
-    
-    for _ in np.arange(num-4):
-        p = list(CreatePermutation(seq))
-        poblation.append(p)
-    return poblation
-
-@njit
-def CreatePoblation(num:int, ls2:List[int])->List[List[int]]:
-    poblation = np.zeros(shape=(num, len(ls2)), dtype=np.int64)
-    for _ in np.arange(num):
-        poblation[_] = CreatePermutation(ls2)
-    return poblation
-
-@njit
-def CalcFi(ind:Ind, boxesData:List[List[int]], container:List[int],heuristic:int=0):
-    bin = create_Bin(NumbaList(container))
-    boxesData = NumbaList(boxesData)
-    gene = ind.genome
-    if heuristic == 0:
-        DBLF(bin,gene,boxesData)
-    else:
-        DBLF2(bin,gene,boxesData)
-    resp = bin.getLoadVol()/(container[0]*container[1]*container[2])
-    ind.load=bin.getN()
-    ind.fi = resp
-    ind.codeSolution = CodeSolution(bin.getBoxes())
-
-@njit
-def InstancePob(pob:List[List[int]],boxesData:List[List[int]], container:List[int],heuristic:int=0)->List[Ind]:
-    lst = [ ]
-    for i in np.arange(len(pob)):
-        ind:Ind = create_intidivual(NumbaList(pob[i]))
-        CalcFi(ind,boxesData,container,heuristic)
-        lst.append(ind)
-    return lst
 
 @njit
 def Hamming(f1:List[int],f2:List[int])->float:
@@ -114,42 +13,6 @@ def Hamming(f1:List[int],f2:List[int])->float:
         if f1[i] !=f2[i]:
             count +=1
     return np.float64(count)
-
-@njit
-def Tournament(Pob:List[Ind],pt:float=1.0)->int:
-    n = len(Pob)
-    i1 = np.random.randint(0, n)
-    i2 = np.random.randint(0, n) 
-    while i1 == i2:
-        i2 = np.random.randint(0, n)
-    r = np.random.random()
-    if r <= pt:
-        if Pob[i1].fi > Pob[i2].fi:
-            return i1
-        else:
-            return i2
-    else:
-        if Pob[i1].fi > Pob[i2].fi:
-            return i2
-        else:
-            return i1
-@njit
-def RouletteWheel(Pob:List[Ind])->int:
-    pobFi = np.array([ ind.fi  for ind in Pob])
-    totalFi = np.sum(pobFi)
-    pobFi /= totalFi
-    init = np.random.randint(len(pobFi))
-    r = np.random.random()
-    suma = 0
-    i=init
-    while suma < r:
-        suma += pobFi[i]
-        if suma >=r:
-            break
-        if i == len(pobFi)-1:
-            i=-1
-        i+=1
-    return i
     
 @njit #Cruza por orden
 def CrossOX(P1:List[int],P2:List[int],i:int,j:int)->List[int]:

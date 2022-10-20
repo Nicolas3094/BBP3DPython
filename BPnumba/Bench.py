@@ -4,8 +4,8 @@ from numba import njit,objmode, prange
 from typing import List
 from numba.typed import List as NumbaList
 import time
-from BPnumba.GeneticOperators import Ind, CreateHeuristicPob, InstancePob,CodeSolution
-
+from BPnumba.Individual import Ind, CodeSolution
+from BPnumba.Poblation import CreateHeuristicPob, InstancePob
 @njit
 def ReduceDim(Data:List[List[int]],bin:List[int])->List[List[int]]:
     convertedData:List[List[int]]= []

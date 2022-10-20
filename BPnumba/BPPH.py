@@ -6,7 +6,12 @@ from numba.experimental import jitclass
 from numba.typed import List as NumbaList
 from typing import List
 from collections import OrderedDict
-from BPnumba.PqueueNumba import CreatePriorityQueue,PQVector,listP_type
+from BPnumba.PqueueNumba import CreatePriorityQueue,PQVector
+from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+import warnings
+warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
+warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
+
 
 Bin_type = deferred_type()
 specB = OrderedDict()
@@ -15,7 +20,6 @@ specB['__loaded_volume'] = types.int64
 specB['__n'] = types.int64
 specB['__orderBox'] = types.ListType(types.int64)
 specB['__pos'] =  types.ListType( types.ListType(types.int64))
-
 @jitclass(specB)
 class Bin:
     def __init__(self, dimensiones:List[int]):

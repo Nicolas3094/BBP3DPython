@@ -1,5 +1,5 @@
 
-from ast import Lambda
+from numba.typed import List as NumbaList
 import random
 import pandas as pd
 from numpy import savetxt
@@ -24,7 +24,7 @@ class BPP3DInstanceGenerator():
     def __init__(self):
        pass
 
-    def CreateDataSet(self,DataSet,p):
+    def CreateDataSet(self,DataSet:str,p:int):
         np.random.seed(2502505 + 100*(p - 1))
         AlgBinsProblem = np.array(
                 [[20,20,20],
@@ -122,7 +122,7 @@ class BPP3DInstanceGenerator():
             randpoint[2] = np.random.randint(1,item.dimensions[2])
             newCubes = self.__Create4Boxes__(randpoint,item.dimensions)
             items = items + newCubes
-        itemsValues = np.array([ itemV.dimensions for itemV in items],dtype=np.int64)
+        itemsValues = [ list([int(itemV.dimensions[0]),int(itemV.dimensions[1]),int(itemV.dimensions[2])]) for itemV in items]
         return itemsValues
 
     def Alg3(self,num_boxes,bin):
@@ -308,117 +308,121 @@ CLASS_VIII200 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 200,InstanceNum
 
 
 #Instancias de Karabulut
-P1A1 =lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P1/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-P1A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P1/A2"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-
-P2A1 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P2/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-P2A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P2/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-
-P3A1 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P3/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-P3A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P3/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-
-P4A1 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P4/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-P4A2 = lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P4/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-
-P5A1 =lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P5/A1/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-P5A2 =lambda instanceNum: np.asanyarray(pd.read_csv("Instance/P5/A2/"+str(instanceNum)+".csv",delimiter=",",header=None),dtype=np.int64)
-
-BINP1 = np.array(np.array(pd.read_csv("Instance/P1/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
-BINP2= np.array(np.array(pd.read_csv("Instance/P2/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
-BINP3 = np.array(np.array(pd.read_csv("Instance/P3/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
-BINP4 = np.array(np.array(pd.read_csv("Instance/P4/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
-BINP5 = np.array(np.array(pd.read_csv("Instance/P5/BIN.csv",delimiter=",",header=None),dtype=np.int64)[0],dtype=np.int64)
-
-P1A1D = np.array([np.array(pd.read_csv("Instance/P1/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-P1A2D = np.array([np.array(pd.read_csv("Instance/P1/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-
-P2A1D = np.array([np.array(pd.read_csv("Instance/P2/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-P2A2D = np.array([np.array(pd.read_csv("Instance/P2/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-
-P3A1D = np.array([np.array(pd.read_csv("Instance/P3/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-P3A2D = np.array([np.array(pd.read_csv("Instance/P3/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-
-P4A1D =  np.array([np.array(pd.read_csv("Instance/P4/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-P4A2D =  np.array([np.array(pd.read_csv("Instance/P4/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-
-P5A1D = np.array([np.array(pd.read_csv("Instance/P5/A1/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-P5A2D = np.array([np.array(pd.read_csv("Instance/P5/A2/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64)
-
-
-
-
-UDLPROBLEM = {
-    'UDL1': {
-        'dimension' : np.asanyarray(pd.read_csv("BPP_data/data/ULDs/uld1.csv",sep=';', header=None)[[0,1,2]])[0],
-        '8boxes':[
-                np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/8boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/8boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/8boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/8boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/8boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-            ]
-        ,
-        '12boxes' : [
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/12boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/12boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/12boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/12boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/12boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-                ]
-        ,
-        '18boxes':[
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/18boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/18boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/18boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/18boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/18boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-                    ]
-        ,
-        '27boxes':[
-                   np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/27boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                   np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/27boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                   np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/27boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                   np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/27boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                   np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/1ULD/27boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-                ]    
-    },
-    'UDL2': {
-        'dimension' : np.asanyarray(pd.read_csv("BPP_data/data/ULDs/uld2.csv",sep=';', header=None)[[0,1,2]])[0],
-        '16boxes':[
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/16boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/16boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/16boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/16boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/16boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-                    ]
-            ,
-        '20boxes':[
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/20boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/20boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/20boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/20boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/20boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-                    ]
-            ,
-        '24boxes':[
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/24boxes/box0.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/24boxes/box1.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/24boxes/box2.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/24boxes/box3.csv",sep=';', header=None)[[0,1,2]]),
-                    np.asanyarray(pd.read_csv("BPP_data/data/Boxes/series1/2ULD/24boxes/box4.csv",sep=';', header=None)[[0,1,2]])
-                    ]   
-    }
-}
-
-
-def CreateData(algorithm:int,problem:int):
-    if problem ==1:
-        return (BINP1,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
-    elif problem == 2:
-        return (BINP2,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
-    elif problem == 3:
-        return (BINP3,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
-    elif problem == 4:
-        return (BINP4,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
+def SimplifiedBoxes(boxes:list[list[int]])->dict:
+    visited = []
+    nw = {}
+    for box in boxes:
+        bx = str(box)
+        if box not in visited:
+            visited.append(box)
+            nw[bx]=1
+        else:
+            nw[bx] +=1
+    return nw
+def StrToList(boxes:str):
+    boxes = boxes.replace("[","")
+    boxes = boxes.replace("]","")
+    boxes = boxes.replace(" ","")
+    boxes = boxes.replace(",",",1,")
+    boxes += ',1'
+    return list(map(lambda x: int(x),boxes.split(",")))
+def createInstance(nm:str):
+    nm2= ""
+    directory = "Instance/"
+    if nm=="P2A2":
+        nm2='Alg2-P2'
+    elif nm == "P3A2":
+        nm2='Alg2-P3'
+    elif nm == "P4A2":
+        nm2='Alg2-P4'
+    elif nm == "P5A2":
+        nm2='Alg2-P5'
     else:
-        return (BINP5,np.array([np.array(pd.read_csv("Instance/P"+str(problem)+"/A"+str(algorithm)+"/"+str(i+1)+".csv",delimiter=",",header=None),dtype=np.int64) for i in np.arange(20)],dtype=np.int64))
+        raise("Error")
+    generator = BPP3DInstanceGenerator()
+    pseed = lambda p : (2502505 + 100*(p - 1))
+    n = len(generator.CreateDataSet(nm2,0)[1])
+    a = open(directory+nm+ ".csv", 'w')
+    savetxt(a,[ [ 100, n]],delimiter=" ",fmt="%d")
+    for seed in np.arange(1,101):
+        data = generator.CreateDataSet(nm2,seed)
+        section = [[seed,pseed(seed)]]
+        boxes:list[list[int]] = data[1]
+        nw = SimplifiedBoxes(boxes)
+        kys = list(nw.keys())
+        section.append(list(data[0][0]))
+        section.append([len(kys)])
+        for i in np.arange(len(kys)):
+            st = StrToList(kys[i])
+            nw[str([st[0],st[2],st[4]])]
+            st.insert(0,nw[str([st[0],st[2],st[4]])])
+            st.insert(0,i+1)
+            section.append(st)
+        for i in np.arange(len(section)):
+            savetxt(a,[np.array(section[i],dtype=np.int64)],delimiter=" ",fmt="%d")
+    a.close()
+
+def createPA():
+    createInstance("P2A2")
+    createInstance("P3A2")
+    createInstance("P4A2")
+    createInstance("P5A2")
+
+
+def CreateInstance(problem:pd.Series)->list[list]:
+    if problem[0][0] == " ":
+        for i in np.arange(len(problem)):
+            problem[i]=problem[i][1:]
+    if " " in problem[0]:
+        n = int(problem[0].split(" ")[1])
+    else:
+        n= -1
+    bin = np.array(problem[2].split(" "),dtype=np.int64)
+    totalboxes=[]
+    newcontainer=False
+    boxes:list[int] = []
+    for i in np.arange(len(problem)):
+        res =np.array(problem[i].split(" "),dtype=np.int64)
+        k =len(res)
+        if k == 8 and not newcontainer:
+            if len(boxes) != 0: boxes.clear()
+            newcontainer=True
+        elif k!=8 and newcontainer:
+            newcontainer=False
+            if len(boxes) != n and n != -1:
+                raise("AssertionError")
+            totalboxes.append(boxes)
+            boxes=list()
+        if newcontainer:
+            for k in np.arange(res[1]):
+                boxes.append([ # (orientacion valita Vertical, Medida de caja)
+                    [res[2],res[3]], 
+                    [res[4],res[5]],
+                    [res[6],res[7]] 
+                    ])
+        if i==len(problem)-1:
+            totalboxes.append(boxes)
+    return [bin,totalboxes]
+
+def createInstance(name:str)->list:
+    PA = CreateInstance(pd.read_csv(name,header=None)[0])
+    DataSet:list[list[list[int]]] = PA[1][0]
+    for i in np.arange(len(DataSet)):
+            for j in np.arange(len(DataSet[i])):
+                DataSet[i][j]=NumbaList( DataSet[i][j])
+    PA[1][0] = NumbaList(DataSet)
+    PA[0] = NumbaList(PA[0])
+    return PA
+
+P2A2 = createInstance("Instance/P2A2.csv")
+P3A2 = createInstance("Instance/P3A2.csv")
+P4A2 = createInstance("Instance/P4A2.csv")
+P5A2 = createInstance("Instance/P5A2.csv")
+
+BR1 = createInstance("Instance/BR1.csv")
+BR2 = createInstance("Instance/BR2.csv")
+BR3 = createInstance("Instance/BR3.csv")
+BR4 = createInstance("Instance/BR4.csv")
+BR5 = createInstance("Instance/BR5.csv")
+BR6 = createInstance("Instance/BR6.csv")
+BR7 = createInstance("Instance/BR7.csv")

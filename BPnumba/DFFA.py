@@ -1,5 +1,6 @@
 import numpy as np
-from BPnumba.GeneticOperators import Hamming,Ind, SwapPointValue,ind_type,CalcFi,CrossOX,Combine2,MutateC1,MutateInversion
+from BPnumba.GeneticOperators import Hamming, SwapPointValue,CrossOX,Combine2,MutateC1,MutateInversion
+from BPnumba.Individual import Ind,ind_type,CalcFi
 from numba.typed import List as NumbaList
 from numba import  njit, deferred_type, types
 from typing import List
