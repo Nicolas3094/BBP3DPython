@@ -320,13 +320,13 @@ def SimplifiedBoxes(boxes:list[list[int]])->dict:
             nw[bx] +=1
     return nw
 def StrToList(boxes:str):
-    boxes = boxes.replace("[","")
-    boxes = boxes.replace("]","")
+    
     boxes = boxes.replace(" ","")
     boxes = boxes.replace(",",",1,")
-    boxes += ',1'
+    boxes = boxes.replace("[","1,")
+    boxes = boxes.replace("]","")
     return list(map(lambda x: int(x),boxes.split(",")))
-def createInstance(nm:str):
+def createInstance(nm:str,num:int=100):
     nm2= ""
     directory = "Instance/"
     if nm=="P2A2":
@@ -344,7 +344,7 @@ def createInstance(nm:str):
     n = len(generator.CreateDataSet(nm2,0)[1])
     a = open(directory+nm+ ".csv", 'w')
     savetxt(a,[ [ 100, n]],delimiter=" ",fmt="%d")
-    for seed in np.arange(1,101):
+    for seed in np.arange(1,num+1):
         data = generator.CreateDataSet(nm2,seed)
         section = [[seed,pseed(seed)]]
         boxes:list[list[int]] = data[1]
@@ -354,8 +354,7 @@ def createInstance(nm:str):
         section.append([len(kys)])
         for i in np.arange(len(kys)):
             st = StrToList(kys[i])
-            nw[str([st[0],st[2],st[4]])]
-            st.insert(0,nw[str([st[0],st[2],st[4]])])
+            st.insert(0,nw[str([st[1],st[3],st[5]])])
             st.insert(0,i+1)
             section.append(st)
         for i in np.arange(len(section)):
@@ -391,38 +390,39 @@ def CreateInstance(problem:pd.Series)->list[list]:
             newcontainer=False
             if len(boxes) != n and n != -1:
                 raise("AssertionError")
-            totalboxes.append(boxes)
+            totalboxes.append(NumbaList(boxes))
             boxes=list()
         if newcontainer:
             for k in np.arange(res[1]):
-                boxes.append([ # (orientacion valita Vertical, Medida de caja)
-                    [res[2],res[3]], 
-                    [res[4],res[5]],
-                    [res[6],res[7]] 
-                    ])
+                boxes.append(NumbaList([ # (orientacion valita Vertical, Medida de caja)
+                    NumbaList([res[3],res[2]]), 
+                     NumbaList([res[5],res[4]]),
+                     NumbaList([res[7],res[6]])
+                    ]))
         if i==len(problem)-1:
             totalboxes.append(boxes)
-    return [bin,totalboxes]
+    return [NumbaList(bin),totalboxes]
 
-def createInstance(name:str)->list:
-    PA = CreateInstance(pd.read_csv(name,header=None)[0])
-    DataSet:list[list[list[int]]] = PA[1][0]
-    for i in np.arange(len(DataSet)):
-            for j in np.arange(len(DataSet[i])):
-                DataSet[i][j]=NumbaList( DataSet[i][j])
-    PA[1][0] = NumbaList(DataSet)
-    PA[0] = NumbaList(PA[0])
-    return PA
-
-P2A2 = createInstance("Instance/P2A2.csv")
-P3A2 = createInstance("Instance/P3A2.csv")
-P4A2 = createInstance("Instance/P4A2.csv")
-P5A2 = createInstance("Instance/P5A2.csv")
-
-BR1 = createInstance("Instance/BR1.csv")
-BR2 = createInstance("Instance/BR2.csv")
-BR3 = createInstance("Instance/BR3.csv")
-BR4 = createInstance("Instance/BR4.csv")
-BR5 = createInstance("Instance/BR5.csv")
-BR6 = createInstance("Instance/BR6.csv")
-BR7 = createInstance("Instance/BR7.csv")
+def GetInstance(nm:str):
+    if nm=="P2A2":
+        return CreateInstance(pd.read_csv("Instance/P2A2.csv",header=None)[0])
+    elif nm=="P3A2":
+        return CreateInstance(pd.read_csv("Instance/P3A2.csv",header=None)[0])
+    elif nm=="P4A2":
+        return CreateInstance(pd.read_csv("Instance/P4A2.csv",header=None)[0])
+    elif nm=="P5A2":
+        return CreateInstance(pd.read_csv("Instance/P5A2.csv",header=None)[0])
+    elif nm=="BR1":
+        return  CreateInstance(pd.read_csv("Instance/BR1.csv",header=None)[0])
+    elif nm=="BR2":
+        return  CreateInstance(pd.read_csv("Instance/BR2.csv",header=None)[0])
+    elif nm=="BR3":
+        return  CreateInstance(pd.read_csv("Instance/BR3.csv",header=None)[0])
+    elif nm=="BR4":
+        return  CreateInstance(pd.read_csv("Instance/BR4.csv",header=None)[0])
+    elif nm=="BR5":
+        return  CreateInstance(pd.read_csv("Instance/BR5.csv",header=None)[0])
+    elif nm=="BR6":
+        return  CreateInstance(pd.read_csv("Instance/BR6.csv",header=None)[0])
+    elif nm=="BR7":
+        return  CreateInstance(pd.read_csv("Instance/BR7.csv",header=None)[0])
