@@ -71,7 +71,7 @@ def CreateRotHPob(pop :int, ITEMS:list[ItemBin], rotType:int=0)->list[Ind]:
         for ind in hpob:
             indPob.append(create_intidivual(ind))
     return NumbaList(indPob)
-@njit(parallel=True)
+@njit
 def EvalPob(pob:List[Ind],boxData:List[ItemBin], container :List[int],rotation:int=0):
-    for i in prange(len(pob)):
+    for i in np.arange(len(pob)):
         CalcFi(ind = pob[i], boxesData=boxData,container=container,rotation=rotation)

@@ -401,7 +401,7 @@ def CreateInstance(problem:pd.Series)->list[list]:
                     ]))
         if i==len(problem)-1:
             totalboxes.append(boxes)
-    return [NumbaList(bin),totalboxes]
+    return [NumbaList(bin),np.array(totalboxes,dtype=np.int64)]
 
 def GetInstance(nm:str):
     if nm=="P2A2":
