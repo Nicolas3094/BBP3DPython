@@ -1,11 +1,12 @@
 import numpy as np
 from numba.typed import List as NumbaList
 
-from BPnumba.GeneticOperators import MutateC2
+from BPnumba.GeneticOperators import MutateC2,MutateC1,MutateInversion
 from BPnumba.Poblation import CreatePermutation
 from BPnumba.Selection import Tournament
-from BPnumba.Individual import ind_type,create_intidivual,CalcFi,Ind
-
+from BPnumba.Individual import ind_type,create_intidivual,CalcFi,Ind,createR_intidivual
+from BPnumba.BoxN import ItemBin
+from BPnumba.AGH import Crossover,FlipMutation,Mutation
 from numba import njit, deferred_type, types
 from typing import List
 import random
@@ -104,3 +105,44 @@ EABC_type.define(EDABC.class_type.instance_type)
 @njit 
 def createEDABC(heuristic:int=0)->EDABC:
     return EDABC(heuristic)
+
+@njit 
+def BeeSearch(mutType:int,rot:int,numItr: int, m_sites:int,elite_sites:int,elite_bees:int,nonelite_bees:int,ColonyWorker:List[Ind], datos:List[ItemBin], contenedor:List[int])->Ind:
+        pop_num = len(ColonyWorker)
+        n = len(datos)
+        ColonyWorker.sort(key=lambda x:x.fi,reverse=True)
+        for _ in np.arange(numItr):
+            #select elite sites
+            for e in np.arange(elite_sites):
+                for _ in np.arange(elite_bees):
+                    #neighborhood search
+                    cx =Mutation(mutType,ColonyWorker[e].genome,ColonyWorker[e].genome_r,1)
+                    if rot !=0:
+                        FlipMutation(boxes=datos,gen=cx[0],rotgen=cx[1],pm=0.05,rotType=rot)
+                    newbee=createR_intidivual(NumbaList(cx[0]),NumbaList(cx[1]))
+                    CalcFi(newbee, datos, contenedor,rot)
+                    if newbee.fi > ColonyWorker[e].fi:
+                        ColonyWorker[e]=newbee
+            for m in np.arange(elite_sites,m_sites):
+                for _ in np.arange(nonelite_bees):
+                    #neighborhood search
+                    cx =Mutation(mutType,ColonyWorker[m].genome,ColonyWorker[m].genome_r,1)
+                    if rot !=0:
+                        FlipMutation(boxes=datos,gen=cx[0],rotgen=cx[1],pm=0.05,rotType=rot)
+                    newbee=createR_intidivual(NumbaList(cx[0]),NumbaList(cx[1]))
+                    CalcFi(newbee, datos, contenedor,rot)
+                    if newbee.fi > ColonyWorker[m].fi:
+                        ColonyWorker[m]=newbee
+            for nm in np.arange(m_sites,pop_num):
+                genome = CreatePermutation(n)
+                genome_rotation = np.zeros(n,dtype=np.int64)
+                for l in np.arange(n):
+                    genome_rotation[l] = np.random.randint(rot)
+                newbee=createR_intidivual(genome,genome_rotation)
+                CalcFi(newbee, datos, contenedor,rot)
+                ColonyWorker[nm]=newbee
+            ColonyWorker.sort(key=lambda x:x.fi,reverse=True)
+            if ColonyWorker[0].fi == 1:
+                break
+            
+        return ColonyWorker[0]

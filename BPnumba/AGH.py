@@ -6,7 +6,7 @@ from numba.experimental import jitclass
 from typing import List
 from collections import OrderedDict
 from BPnumba.GeneticOperators import CrossOX,MutateC1,MutateC2,MutateInversion
-from BPnumba.Selection import Tournament
+from BPnumba.Selection import Tournament,RouletteWheel
 from BPnumba.Individual import Ind, ind_type,create_intidivual,createR_intidivual,CalcFi
 from BPnumba.BoxN import ItemBin
 import math
@@ -125,6 +125,7 @@ def GASearch(maxItr:int,ps:float,pc:float,pmr:float,mut:int,pob:List[Ind],datos:
             rot=rotType,
             datos=datos,
             contenedor=contenedor)
+        pob.sort(key=lambda  ind : ind.fi, reverse=True)
         #bestfi[_]=pob[0].fi
         if pob[0].fi == 1 or (pob[0].fi-pob[max_pop-1].fi)/(pob[0].fi**2) <=0.001:
             #if( _ != maxItr):
@@ -137,17 +138,16 @@ def GASearch(maxItr:int,ps:float,pc:float,pmr:float,mut:int,pob:List[Ind],datos:
 def NxGen(prSelect,prCross,prMutR,MutType,pob:List[Ind],rot:int,datos:List[ItemBin],contenedor:List[int]):
         n = len(pob)
         k = np.random.randint(n/4,n/2)
-        nwgn:list[Ind] = pob[:k]
-        while len(nwgn)<n:
-            id1 = Tournament(pob,prSelect)
-            id2 = Tournament(pob,prSelect)
+        prevPob= pob.copy()
+        for l in np.arange(k,n):
+            id1 = Tournament(prevPob,prSelect)
+            id2 = Tournament(prevPob,prSelect)
             while id2 == id1 :
-                id2 = Tournament(pob,prSelect)
+                id2 = Tournament(prevPob)
             if np.random.random() <= prCross:
-                pm = 1.0-(pob[id1].fi+pob[id2].fi)/2
-                    
-                child1 =MakeChild(f1=pob[id1],
-                          f2=pob[id2],
+                pm = 1.0-(prevPob[id1].fi+prevPob[id2].fi)/2
+            child1 =MakeChild(f1=prevPob[id1],
+                          f2=prevPob[id2],
                           MutType = MutType,
                           pm=pm,
                           pmr=prMutR,
@@ -155,21 +155,74 @@ def NxGen(prSelect,prCross,prMutR,MutType,pob:List[Ind],rot:int,datos:List[ItemB
                           container=contenedor,
                           Rot=rot)
                 
-                child2 = MakeChild(f1=pob[id2],
-                          f2=pob[id1],
-                          MutType = MutType,
-                          pm=pm,
-                          pmr=prMutR,
-                          boxes=datos,
-                          container=contenedor,
-                          Rot=rot)
-                
-                nwgn.append(child1)
-                if child1.fi != child2.fi:
-                    nwgn.append(child2)
-        nwgn.sort(key=lambda ind : ind.fi, reverse=True)
-        for i in np.arange(n):
-            pob[i]=nwgn[i]
+            child2 = MakeChild(f1=prevPob[id2],
+                f2=prevPob[id1],
+                MutType = MutType,
+                pm=pm,
+                pmr=prMutR,
+                boxes=datos,
+                container=contenedor,
+                Rot=rot)
+            if child1.fi >  child2.fi:
+                pob[l]=child1
+            else:
+                pob[l]=child2
+@njit
+def MakeChild(f1:Ind,f2:Ind,MutType:float,pm:float,pmr:float,boxes:List[ItemBin],container:List[int],Rot:int)->Ind:
+    cx = Crossover(f1,f2)
+    cx =Mutation(MutType, NumbaList(cx[0]),NumbaList(cx[1]),pm)
+    if Rot !=0:
+        FlipMutation(boxes=boxes,gen=cx[0],rotgen=cx[1],pm=pmr,rotType=Rot)    
+    ind = createR_intidivual(NumbaList(cx[0]),NumbaList(cx[1]))
+    CalcFi(ind,boxes,NumbaList(container),Rot)
+    return ind
+
+@njit
+def Mutation(MutType:int,gene:List[int],rgen:List[int], pm:float)->List[List[int]]:
+    if random.random() > pm:
+        return NumbaList([gene.copy(),rgen.copy()])
+    if MutType==1:
+        resp= NumbaList(MutateC1(NumbaList(gene),NumbaList(rgen)))
+        return resp
+    elif MutType==2:
+        return NumbaList(MutateC2(NumbaList(gene),NumbaList(rgen)))
+    else:
+        return NumbaList(MutateInversion(NumbaList(gene),NumbaList(rgen)) )
+@njit
+def FlipMutation(boxes:List[ItemBin],gen:List[int],rotgen:List[int], pm:float,rotType:int):
+    N = len(gen)  
+    a = np.random.random(size=N)
+    for i in np.arange(N):
+        if a[i]<=pm:
+            box=boxes[gen[i]-1]
+            if rotgen[i] >= rotType-1:
+                rotgen[i]=0
+            else:
+                rotgen[i]+=1
+            box.rotate(rotgen[i])
+            while not box.isValidRot():
+                if rotgen[i] >= rotType-1:
+                        rotgen[i]=0
+                else:
+                    rotgen[i]+=1
+                box.rotate(rotgen[i])
+@njit
+def Crossover(ind1:Ind,ind2:Ind)->List[List[int]]:
+    n = len(ind1.genome)
+    i= random.randrange(3,int(n/2))
+    j= random.randrange(i+1,n)
+    resp = CrossOX(ind1.genome,ind2.genome,ind1.genome_r,ind2.genome_r,i,j)        
+    return resp
+
+@vectorize
+def flip(x, y,pm,rot):
+    if x > pm:
+        return y
+    else:
+        if y == rot-1:
+            return 0
+        else: 
+            return y+1
 
 def makeChild(f1:Ind,f2:Ind,MutType:float,pm:float,pmr:float,boxes:List[ItemBin],container:List[int],Rot:int)->Ind:
     cx = Crossover(f1,f2)
@@ -204,54 +257,7 @@ def flipCuda(a, b, c,pm,rot):
                 c[i] = 0
             else:
                 c[i] = b[i]+1     
-@njit
-def MakeChild(f1:Ind,f2:Ind,MutType:float,pm:float,pmr:float,boxes:List[ItemBin],container:List[int],Rot:int)->Ind:
-    cx = Crossover(f1,f2)
-    cx =Mutation(MutType, NumbaList(cx[0]),NumbaList(cx[1]),pm)
-    if Rot !=0:
-        FlipMutation(boxes=boxes,gen=cx[1],pm=pmr,rotType=Rot)    
-    ind = createR_intidivual(NumbaList(cx[0]),NumbaList(cx[1]))
-    CalcFi(ind,boxes,NumbaList(container),Rot)
-    return ind
 
-@njit
-def Mutation(MutType:int,gene:List[int],rgen:List[int], pm:float)->List[List[int]]:
-    if random.random() > pm:
-        return NumbaList([gene.copy(),rgen.copy()])
-    if MutType==1:
-        resp= NumbaList(MutateC1(NumbaList(gene),NumbaList(rgen)))
-        return resp
-    elif MutType==2:
-        return NumbaList(MutateC2(NumbaList(gene),NumbaList(rgen)))
-    else:
-        return NumbaList(MutateInversion(NumbaList(gene),NumbaList(rgen)) )
-@njit
-def FlipMutation(boxes:List[ItemBin],gen:List[int], pm:float,rotType:int):
-    N = len(gen)  
-    a = np.random.random(size=N)
-    for i in np.arange(N):
-        if a[i]<=pm:
-            box=boxes[gen[i]]
-            if gen[i] >= rotType-1:
-                    gen[i]=0
-            else:
-                gen[i]+=1
-@vectorize
-def flip(x, y,pm,rot):
-    if x > pm:
-        return y
-    else:
-        if y == rot-1:
-            return 0
-        else: 
-            return y+1
-@njit
-def Crossover(ind1:Ind,ind2:Ind)->List[List[int]]:
-    n = len(ind1.genome)
-    i= random.randrange(3,int(n/2))
-    j= random.randrange(i+1,n)
-    resp = CrossOX(ind1.genome,ind2.genome,ind1.genome_r,ind2.genome_r,i,j)        
-    return resp
 
 
 @njit

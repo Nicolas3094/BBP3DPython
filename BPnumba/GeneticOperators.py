@@ -5,14 +5,16 @@ from typing import List
 from numba.typed import List as NumbaList
 from BPnumba.BoxN import ItemBin
 from BPnumba.BPPH import create_Bin,DBLF,DBLF2
+from BPnumba.Individual import Ind
 
 @njit
-def Hamming(f1:List[List[int]],f2:List[List[int]])->float:
+def Hamming(f1:Ind,f2:Ind):
     count =0
-    for i in np.arange(len(f1[0])):
-        if f1[0][i] != f2[0][i] and f1[1][i] != f2[1][i] :
+    N=len(f1.genome)
+    for i in np.arange(N):
+        if f1.genome[i] != f2.genome[i] and f1.genome_r[i] != f2.genome_r[i]:
             count +=1
-    return np.float64(count)
+    return count
     
 @njit #Cruza por orden
 def CrossOX(P1:List[int],P2:List[int],R1:List[int],R2:List[int],i:int,j:int)->List[List[int]]:

@@ -23,6 +23,10 @@ class Ind:
          self.genome_r = rgenome
          self.load = 0
          self.codeSolution = ''
+    def SetGenome(genome:List[int]):
+        self.genome = genome
+    def SetGenomeR(rgenome:List[int]):
+        self.genome_r=rgenome
 ind_type = deferred_type()
 ind_type.define(Ind.class_type.instance_type)
 
