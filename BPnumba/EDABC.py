@@ -101,7 +101,7 @@ class EDABC:
     def SelectHeuristic(self, hID:int)->None:
         self.__Heuristic= hID
 
-EABC_type.define(EDABC.class_type.instance_type)
+EABC_type.define(EDABC.class_type.instance_type)  # type: ignore
 @njit 
 def createEDABC(heuristic:int=0)->EDABC:
     return EDABC(heuristic)
@@ -109,7 +109,7 @@ def createEDABC(heuristic:int=0)->EDABC:
 @njit 
 def BeeSearch(mutType:int,rot:int,numItr: int, m_sites:int,elite_sites:int,elite_bees:int,nonelite_bees:int,ColonyWorker:List[Ind], datos:List[ItemBin], contenedor:List[int])->Ind:
         pop_num = len(ColonyWorker)
-        n = len(datos)
+        n = len(ColonyWorker[0].genome)
         ColonyWorker.sort(key=lambda x:x.fi,reverse=True)
         for _ in np.arange(numItr):
             #select elite sites
@@ -118,7 +118,7 @@ def BeeSearch(mutType:int,rot:int,numItr: int, m_sites:int,elite_sites:int,elite
                     #neighborhood search
                     cx =Mutation(mutType,ColonyWorker[e].genome,ColonyWorker[e].genome_r,1)
                     if rot !=0:
-                        FlipMutation(boxes=datos,gen=cx[0],rotgen=cx[1],pm=0.05,rotType=rot)
+                        FlipMutation(boxes=datos,gen=cx[0],rotgen=cx[1],pm=0.01,rotType=rot)
                     newbee=createR_intidivual(NumbaList(cx[0]),NumbaList(cx[1]))
                     CalcFi(newbee, datos, contenedor,rot)
                     if newbee.fi > ColonyWorker[e].fi:
@@ -128,16 +128,22 @@ def BeeSearch(mutType:int,rot:int,numItr: int, m_sites:int,elite_sites:int,elite
                     #neighborhood search
                     cx =Mutation(mutType,ColonyWorker[m].genome,ColonyWorker[m].genome_r,1)
                     if rot !=0:
-                        FlipMutation(boxes=datos,gen=cx[0],rotgen=cx[1],pm=0.05,rotType=rot)
+                        FlipMutation(boxes=datos,gen=cx[0],rotgen=cx[1],pm=0.01,rotType=rot)
                     newbee=createR_intidivual(NumbaList(cx[0]),NumbaList(cx[1]))
                     CalcFi(newbee, datos, contenedor,rot)
                     if newbee.fi > ColonyWorker[m].fi:
                         ColonyWorker[m]=newbee
             for nm in np.arange(m_sites,pop_num):
-                genome = CreatePermutation(n)
+                genome = CreatePermutation(datos)
                 genome_rotation = np.zeros(n,dtype=np.int64)
                 for l in np.arange(n):
                     genome_rotation[l] = np.random.randint(rot)
+                    box = datos[genome[l]-1]
+                    box.rotate( genome_rotation[l],rot)
+                    while not box.isValidRot():
+                        genome_rotation[l] = np.random.randint(rot)
+                        box.rotate( genome_rotation[l],rot)
+                    box.rotate(0,rot)
                 newbee=createR_intidivual(genome,genome_rotation)
                 CalcFi(newbee, datos, contenedor,rot)
                 ColonyWorker[nm]=newbee

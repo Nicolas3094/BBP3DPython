@@ -17,7 +17,7 @@ class Nodo:
 @njit
 def make_linked_node(data):
     return Nodo(data, None)
-node_type.define(Nodo.class_type.instance_type)
+node_type.define(Nodo.class_type.instance_type)  # type: ignore
 
 listP_type = deferred_type()
 specP = OrderedDict()
@@ -61,7 +61,7 @@ class PQVector:
         while q.next is not None:
             qprev = q
             q = q.next
-            if qprev.data[0] == q.data[0] and qprev.data[2] == q.data[2]:
+            if  (qprev.data[0] == q.data[0] and  qprev.data[2] == q.data[2]) or  (qprev.data[0] < q.data[0] and  qprev.data[1] == q.data[1]  and qprev.data[2] == q.data[2]):
                 qprev.next = q.next
                 self.__n -=1
     def pop(self)->None:
@@ -87,6 +87,13 @@ class PQVector:
             q=q.next
             k+=1
         return q.data
+    def changePt(self,i:int,val:List[int]):
+        q = self.__top
+        k = 0
+        while q.next is not None and k != i:
+            q=q.next
+            k+=1
+        q.data = val
     def delPt(self, i:int)->None:
         q = self.__top
         qprev = q
@@ -103,10 +110,13 @@ class PQVector:
         return self.__top.data
     def empty(self)->bool:
         return self.__n == 0
+    def clear(self):
+        while not self.empty():
+            self.pop()
     def size(self)->int:
         return self.__n
     def __Condition__(self,vec1:List[int],vec2:List[int])->bool:
-        return self.__Cond1__(vec1,vec2) or self.__Cond2__(vec1,vec2) or self.__Cond3__(vec1,vec2)
+        return self.__Cond3__(vec1,vec2) or self.__Cond1__(vec1,vec2) or self.__Cond2__(vec1,vec2)
     def __Cond1__(self,vec1: List[int],vec2: List[int])->bool:
         return vec1[self.__order[0]] < vec2[self.__order[0]]
     def __Cond2__(self,vec1: List[int],vec2: List[int])->bool:
@@ -117,4 +127,4 @@ class PQVector:
 @njit
 def CreatePriorityQueue(order):
     return PQVector(order)
-listP_type.define(PQVector.class_type.instance_type)
+listP_type.define(PQVector.class_type.instance_type)  # type: ignore

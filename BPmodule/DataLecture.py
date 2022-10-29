@@ -1,23 +1,38 @@
 import json
 import os
+from BPnumba.BoxN import ItemBin
+from BPnumba.BPPH import Bin
 
-
-def ExpotarJSON(path:str,Positions:list[list[int]],cajasID:list[int],Data:list[list[int]],bin:list[int]):
+def ExpotarJSON(path:str,rot:int,Cont:Bin,Data:list[ItemBin]):
+    
+    binDim = Cont.dimensions
+    n=Cont.getN()
+    gen = Cont.getBoxes()
+    rgen = Cont.getRot()
+    positions = Cont.getPositions()
     data = {
       "box": [],
       "bin": {
-        "x":int(bin[0]),"y":int(bin[2]),"z":int(bin[1])
+        "x":int(binDim[0]),"y":int(binDim[2]),"z":int(binDim[1])
       }
       }
-    for i in range(len(cajasID)):
-        caja = cajasID[i]-1
+    for i in range(n):
+        
+        cajaID = gen[i]-1
+        
+        item = Data[cajaID]
+        if rot != 0:
+          item.rotate(rgen[i],rot)
+        
+        itemDim = item.CDim()
         data["box"].append({
-        "id": caja+1,
-        "dimension": {"x":int(Data[caja][0]),"y":int(Data[caja][2]),"z":int(Data[caja][1])},
-        "position" : {"x":int(Positions[i][0]),"y":int(Positions[i][2]),"z":int(Positions[i][1])},
+        "id": item.T,
+        "dimension": {"x":int(itemDim[0]),"y":int(itemDim[2]),"z":int(itemDim[1])},
+        "position" : {"x":int(positions[i][0]),"y":int(positions[i][2]),"z":int(positions[i][1])},
         })
     with open(path,'w') as fp:
         json.dump(data,fp,indent=4)
+    print("Done!")
 def PossiblePositions(path:str,positions:list[list[int]]):
   data = {
       "points": []

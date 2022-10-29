@@ -368,7 +368,8 @@ def createPA():
     createInstance("P5A2")
 
 
-def CreateInstance(problem:pd.Series)->list[list]:
+
+def CreateInstance(problem:pd.Series):
     if problem[0][0] == " ":
         for i in np.arange(len(problem)):
             problem[i]=problem[i][1:]
@@ -377,9 +378,9 @@ def CreateInstance(problem:pd.Series)->list[list]:
     else:
         n= -1
     bin = np.array(problem[2].split(" "),dtype=np.int64)
-    totalboxes=[]
+    totalboxes:list[list[list[list[int]]]]=[]
     newcontainer=False
-    boxes:list[int] = []
+    boxes:list[list[list[int]]] = []
     for i in np.arange(len(problem)):
         res =np.array(problem[i].split(" "),dtype=np.int64)
         k =len(res)
@@ -389,9 +390,9 @@ def CreateInstance(problem:pd.Series)->list[list]:
         elif k!=8 and newcontainer:
             newcontainer=False
             if len(boxes) != n and n != -1:
-                raise("AssertionError")
+                raise("AssertionError")  # type: ignore
             totalboxes.append(NumbaList(boxes))
-            boxes=list()
+            boxes:list[list[list[int]]] = []
         if newcontainer:
             for k in np.arange(res[1]):
                 boxes.append(NumbaList([ # (orientacion valita Vertical, Medida de caja)
@@ -401,7 +402,8 @@ def CreateInstance(problem:pd.Series)->list[list]:
                     ]))
         if i==len(problem)-1:
             totalboxes.append(boxes)
-    return [NumbaList(bin),np.array(totalboxes,dtype=np.int64)]
+    bx= np.array(totalboxes)
+    return [bin,bx]
 
 def GetInstance(nm:str):
     if nm=="P2A2":

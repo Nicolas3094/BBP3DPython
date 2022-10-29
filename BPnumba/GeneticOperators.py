@@ -4,9 +4,33 @@ from numba import types, njit
 from typing import List
 from numba.typed import List as NumbaList
 from BPnumba.BoxN import ItemBin
-from BPnumba.BPPH import create_Bin,DBLF,DBLF2
+from BPnumba.BPPH import create_Bin,DBLF
 from BPnumba.Individual import Ind
 
+@njit
+def RepairGen(gne,rgen,ini,rango):
+    auxCod = gne[ini:rango]
+    rotAux = rgen[ini:rango]
+    ds = list(zip(auxCod,rotAux))
+    r=np.random.random()
+    if r>.5:
+        ds.sort(key=lambda x: x)
+    else:
+        ds.sort(key=lambda x: x,reverse=True)
+    for _ in np.arange(len(ds)):
+        gne[_+ini] = ds[_][0]
+        rgen[_+ini] = ds[_][1]
+@njit
+def RepairRan(ind):
+    ini=0
+    end = np.random.randint(int(len(ind.genome)/7),int(len(ind.genome)/3))
+    while end < len(ind.genome)-1:
+        RepairGen(ind.genome,ind.genome_r,ini,end)
+        ini =end
+        end += np.random.randint(int(len(ind.genome)/7),int(len(ind.genome)/3))
+        if end > len(ind.genome):
+            end=len(ind.genome)
+    RepairGen(ind.genome,ind.genome_r,ini,end-1)
 @njit
 def Hamming(f1:Ind,f2:Ind):
     count =0
@@ -162,6 +186,7 @@ def MutateC2(genome: List[int],rgenome: List[int], randomStep: int=-1)->List[Lis
         index=np.random.randint(end+1,n)
     gene = Combine2(r,genome,index,init,end)
     rgene = Combine2(r,rgenome,index,init,end)
+    RepairGen(gne=gene,rgen=rgene,ini=init,rango=end)
     return [gene,rgene]
 
 
@@ -225,6 +250,7 @@ def MutateC1(genome:List[int],rgenome: List[int],randomStep:int=-1)->List[List[i
     r2 = np.random.random()
     gene = Combine1(r,genome,i,j,i2,j2,r1,r2)
     rgene = Combine1(r,rgenome,i,j,i2,j2,r1,r2)
+    RepairGen(gne=gene,rgen=rgene,ini=i,rango=j2)
     return [gene,rgene]
 
 @njit
@@ -237,4 +263,6 @@ def MutateInversion(gene:List[int],rotGene:List[int],randomStep:int=-1)->List[Li
         step=2
     i= random.randrange(1,int(n/2))
     j= i+step-1
-    return InverseMutation(NumbaList(gene),rotGene,i,j)
+    rs = InverseMutation(NumbaList(gene),rotGene,i,j)
+    RepairGen(gne=rs[0],rgen=rs[1],ini=i,rango=j)
+    return rs
