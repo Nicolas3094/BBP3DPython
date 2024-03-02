@@ -192,10 +192,12 @@ def AddBox(lstP: PQVector, bin: Bin, pt: List[int], boxID: ItemBin,itemsRor:int,
     #    return
     #CORNERS3D(CornerPoints=lstP ,cont=bin,BoxesData=BoxesData,rotItems=itemsRor,itemsToPack=genome,rot=rot)
     lstP.updateList()
+
+    
 @njit
 def DBLF(bin: Bin, itemsToPack: List[int], itemsRor: list[int], BoxesData: List[ItemBin], wayRotation: int = 0):
     lstP = CreatePriorityQueue(NumbaList([0, 2, 1]))  # Define el orde x-z-y
-    CORNERS3D(CornerPoints=lstP,cont=bin,BoxesData=BoxesData,rotItems=itemsRor,itemsToPack=itemsToPack,rot=wayRotation)
+    lstP.push(NumbaList([0,0,0]))
     for i in np.arange(len(itemsToPack)):  # La codificacion y BoxData deben
         boxID = itemsToPack[i]
         box = BoxesData[boxID-1]
@@ -209,18 +211,13 @@ def DBLF(bin: Bin, itemsToPack: List[int], itemsRor: list[int], BoxesData: List[
                     pos=pt, currenBox=box, DataSet=BoxesData, Container=bin, rot=wayRotation)
                 if not overlap:
                     lstP.delPt(j)
-                    
                     box.rotate(itemsRor[i], wayRotation)
                     AddBox(lstP=lstP, bin=bin, pt=pt, boxID=box,genome=itemsToPack,itemsRor=itemsRor[i],
-                           itemV=box.CDim(), BoxesData=BoxesData, rot=wayRotation)
+                           itemV=box.CDim(), BoxesData=BoxesData, rot=wayRotation)       
                     break
-                else:
-                    #print(" no entra ")
+                else:          
                     box.rotate(itemsRor[i], wayRotation)
-        #print(" ")
-    lst = lstP.ToList()
-    for pt in lst:
-        bin.extrapts.append(pt)
+
 @njit
 def CORNERS2D(cont:Bin,BoxesData:List[ItemBin],I:List[int],rotItems:List[int],itemsToPack:List[int],rot:int):
     if len(I)==0:

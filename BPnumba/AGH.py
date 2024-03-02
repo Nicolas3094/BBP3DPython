@@ -43,28 +43,28 @@ def NxGen(prSelect,prCross,prMutR,MutType,pob:List[Ind],rot:int,datos:List[ItemB
                 id2 = Tournament(prevPob)
             if np.random.random() <= prCross:
                 pm = 1.0-(prevPob[id1].fi+prevPob[id2].fi)/2
-            child1 =MakeChild(f1=prevPob[id1],
-                          f2=prevPob[id2],
-                          MutType = MutType,
-                          pm=pm,
-                          pmr=prMutR,
-                          boxes=datos,
-                          container=contenedor,
-                          Rot=rot)
+                child1 =MakeChild(f1=prevPob[id1],
+                            f2=prevPob[id2],
+                            MutType = MutType,
+                            pm=pm,
+                            pmr=prMutR,
+                            boxes=datos,
+                            container=contenedor,
+                            Rot=rot)
+                    
+                child2 = MakeChild(f1=prevPob[id2],
+                    f2=prevPob[id1],
+                    MutType = MutType,
+                    pm=pm,
+                    pmr=prMutR,
+                    boxes=datos,
+                    container=contenedor,
+                    Rot=rot)
                 
-            child2 = MakeChild(f1=prevPob[id2],
-                f2=prevPob[id1],
-                MutType = MutType,
-                pm=pm,
-                pmr=prMutR,
-                boxes=datos,
-                container=contenedor,
-                Rot=rot)
-            
-            if child1.fi >  child2.fi:
-                pob[l]=child1
-            else:
-                pob[l]=child2
+                if child1.fi >  child2.fi:
+                    pob[l]=child1
+                else:
+                    pob[l]=child2
     
 @njit
 def MakeChild(f1:Ind,f2:Ind,MutType:int,pm:float,pmr:float,boxes:List[ItemBin],container:List[int],Rot:int)->Ind:

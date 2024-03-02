@@ -525,7 +525,9 @@ def CreateInstanceFromFile(problem:pd.Series):
     return [bin,bx]
 
 def GetInstance(nm:str):
-    if nm=="P2A2":
+    if nm=="P1A2":
+        return CreateInstanceFromFile(pd.read_csv("Instance/P1A2.csv",header=None)[0])
+    elif nm=="P2A2":
         return CreateInstanceFromFile(pd.read_csv("Instance/P2A2.csv",header=None)[0])
     elif nm=="P3A2":
         return CreateInstanceFromFile(pd.read_csv("Instance/P3A2.csv",header=None)[0])

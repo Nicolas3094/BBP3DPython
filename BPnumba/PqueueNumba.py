@@ -37,6 +37,7 @@ class PQVector:
             return 
         tmp = make_linked_node(vec)
         q = self.__top
+        #If satisfies, put vec at top.
         if self.__Condition__(vec,self.__top.data):
             tmp.next = self.__top
             self.__top=tmp
@@ -61,7 +62,10 @@ class PQVector:
         while q.next is not None:
             qprev = q
             q = q.next
-            if  (qprev.data[0] == q.data[0] and  qprev.data[2] == q.data[2]) or  (qprev.data[0] < q.data[0] and  qprev.data[1] == q.data[1]  and qprev.data[2] == q.data[2]):
+            if ( 
+                (qprev.data[0] == q.data[0] and qprev.data[2] == q.data[2]) or 
+                (qprev.data[0] < q.data[0] and  qprev.data[1] == q.data[1]  and qprev.data[2] == q.data[2])
+                ):
                 qprev.next = q.next
                 self.__n -=1
     def pop(self)->None:
@@ -111,16 +115,21 @@ class PQVector:
     def empty(self)->bool:
         return self.__n == 0
     def clear(self):
-        while not self.empty():
+        while not self.empty(): 
             self.pop()
     def size(self)->int:
         return self.__n
+    
+    #Order 0 -> 2 -> 1 or X -> Z -> Y 
     def __Condition__(self,vec1:List[int],vec2:List[int])->bool:
         return self.__Cond3__(vec1,vec2) or self.__Cond1__(vec1,vec2) or self.__Cond2__(vec1,vec2)
+    
     def __Cond1__(self,vec1: List[int],vec2: List[int])->bool:
         return vec1[self.__order[0]] < vec2[self.__order[0]]
+    
     def __Cond2__(self,vec1: List[int],vec2: List[int])->bool:
         return vec1[self.__order[0]] == vec2[self.__order[0]] and vec1[self.__order[1]] < vec2[self.__order[1]]
+    
     def __Cond3__(self,vec1: List[int],vec2: List[int])->bool:
         return vec1[self.__order[0]] == vec2[self.__order[0]] and vec1[self.__order[1]] == vec2[self.__order[1]] and  vec1[self.__order[2]] < vec2[self.__order[2]]
 

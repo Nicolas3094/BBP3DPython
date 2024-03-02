@@ -98,8 +98,8 @@ def InstaceBoxes(Data)->list[ItemBin]:
             prevboxData=Data[0]
             types=1
         else:
-            prevboxData=Data[i-1]
-        if   prevboxData != Data[i]:
+            prevboxData = Data[i-1]
+        if not (prevboxData == Data[i]).all():
             types +=1
             count=1
         else:
