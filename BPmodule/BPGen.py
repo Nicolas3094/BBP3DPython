@@ -24,7 +24,7 @@ class BPP3DInstanceGenerator():
     def __init__(self):
        pass
 
-    def CreateDataSet(self,DataSet:str,p:int):
+    def CreateDataSet(self, DataSet:str, p:int):
         np.random.seed(2502505 + 100*(p - 1))
         AlgBinsProblem = np.array(
                 [[20,20,20],
@@ -58,10 +58,10 @@ class BPP3DInstanceGenerator():
 
         elif DataSet=='Alg1-P1':
             return createDataSet1(0,15)
-        elif DataSet=='Alg2-P1':
+        elif DataSet=='Alg1-P2':
             return createDataSet2(0,16)
             
-        elif DataSet=='Alg1-P2':
+        elif DataSet=='Alg2-P1':
             return createDataSet1(1,29)
         elif DataSet=='Alg2-P2':
             return createDataSet2(1,25)
@@ -77,11 +77,10 @@ class BPP3DInstanceGenerator():
             return createDataSet2(3,100)
                
         elif DataSet=='Alg1-P5':
-            return [[AlgBinsProblem[4]],self.Alg1(155,AlgBinsProblem[4])]
+            return [[AlgBinsProblem[4]], self.Alg1(155,AlgBinsProblem[4])]
         elif DataSet=='Alg2-P5':
             return createDataSet2(4,151)
         
-       
         else:
             raise Exception("DataSets: S1,..., S8, Alg1-P1,..., Alg3-P1,...Alg3-P5")
         
@@ -256,6 +255,7 @@ class BPP3DInstanceGenerator():
             dim = [auxBin[j]*random.uniform(betas[num],gammas[num]) for j in range(3)]
             data.append(dim)            
         return (bin,data)
+
 generator = BPP3DInstanceGenerator()
 
 createDATA = lambda x,y : savetxt(
@@ -307,61 +307,180 @@ CLASS_VIII50 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 150,InstanceNum=
 CLASS_VIII200 =lambda InstaceID: classI(ClassNum="VIII",BoxNum = 200,InstanceNum=InstaceID)
 
 
-#Instancias de Karabulut
-def SimplifiedBoxes(boxes:list[list[int]])->dict:
-    visited = []
-    nw = {}
-    for box in boxes:
-        bx = str(box)
-        if box not in visited:
-            visited.append(box)
-            nw[bx]=1
-        else:
-            nw[bx] +=1
-    return nw
-def StrToList(boxes:str):
-    
-    boxes = boxes.replace(" ","")
-    boxes = boxes.replace(",",",1,")
-    boxes = boxes.replace("[","1,")
-    boxes = boxes.replace("]","")
-    return list(map(lambda x: int(x),boxes.split(",")))
-def createInstance(nm:str,num:int=100):
-    nm2= ""
+def areArraysEqual(arr1 : list[int], arr2 : list[int]) -> bool:
+    for i in np.arange(len(arr1)):
+        if arr1[i] != arr2[i]:
+            return False
+    return True
+
+def isArraysInMatrix(arr : list[int], matrix : list[list[int]]) -> bool:
+    if len(matrix) == 0:
+        return False
+    for visitedArr in matrix:
+        if areArraysEqual(visitedArr, arr):
+            return True
+    return False
+
+
+def createInstance(nameDataSet : str, numberOfInstances : int = 100):
+    nameDataSetDir= ""
     directory = "Instance/"
-    if nm=="P2A2":
-        nm2='Alg2-P2'
-    elif nm == "P3A2":
-        nm2='Alg2-P3'
-    elif nm == "P4A2":
-        nm2='Alg2-P4'
-    elif nm == "P5A2":
-        nm2='Alg2-P5'
+
+    if nameDataSet =="P1A2":
+        nameDataSetDir ='Alg1-P2'
+    elif nameDataSet =="P2A2":
+        nameDataSetDir ='Alg2-P2'
+    elif nameDataSet == "P3A2":
+        nameDataSetDir ='Alg2-P3'
+    elif nameDataSet == "P4A2":
+        nameDataSetDir='Alg2-P4'
+    elif nameDataSet == "P5A2":
+        nameDataSetDir ='Alg2-P5'
     else:
         raise("Error")
+    
     generator = BPP3DInstanceGenerator()
-    pseed = lambda p : (2502505 + 100*(p - 1))
-    n = len(generator.CreateDataSet(nm2,0)[1])
-    a = open(directory+nm+ ".csv", 'w')
-    savetxt(a,[ [ 100, n]],delimiter=" ",fmt="%d")
-    for seed in np.arange(1,num+1):
-        data = generator.CreateDataSet(nm2,seed)
-        section = [[seed,pseed(seed)]]
-        boxes:list[list[int]] = data[1]
-        nw = SimplifiedBoxes(boxes)
-        kys = list(nw.keys())
-        section.append(list(data[0][0]))
-        section.append([len(kys)])
-        for i in np.arange(len(kys)):
-            st = StrToList(kys[i])
-            st.insert(0,nw[str([st[1],st[3],st[5]])])
-            st.insert(0,i+1)
-            section.append(st)
+    pseed : int = lambda p : (2502505 + 100*(p - 1))
+    numberOfBoxes : int = len(generator.CreateDataSet(nameDataSetDir, 0)[1])
+    
+    a = open(directory + nameDataSet + ".csv", 'w')
+
+    savetxt(a, [ [ numberOfInstances, numberOfBoxes] ], delimiter=" ", fmt="%d")
+
+    for seed in np.arange( 1, numberOfInstances + 1):
+        data = generator.CreateDataSet(nameDataSetDir, seed)
+        container : list[int] = data[0][0]
+        boxes : list[list[int]] = data[1]
+
+        volume: int = 0
+        for box in boxes:
+            volume += box[0] * box[1] * box[2]
+        if volume != container[0] * container[1] * container[2]:
+            raise("Volumes are not equal.")
+        
+        # Adds to the next line de value of the "seed" and the "pseed".
+        section = [ [seed, pseed(seed)] ]
+
+        dictSimplifiedBoxes = SimplifiedBoxes(boxes)
+        listOfStringedBoxes : list[str] = list(dictSimplifiedBoxes.keys())
+
+        totalNumberOfTypedBoxesError = 0
+        for numberOfTypedBoxInDict in dictSimplifiedBoxes.values():
+            totalNumberOfTypedBoxesError += numberOfTypedBoxInDict
+        if totalNumberOfTypedBoxesError != numberOfBoxes:
+            raise("Number of transformed boxes are not equal.")
+
+        # Adds to the next line the container dimensions.
+        section.append(list(container)) 
+        # This number must be less or equal to the "numberOfBoxes",
+        section.append([len(listOfStringedBoxes)])
+
+        for i in np.arange(len(listOfStringedBoxes)):
+            typeBoxNumber = i + 1
+            # [18,11,28]
+            convertedBox : list[int] = StrToList(listOfStringedBoxes[i], 1, 1, 1)
+            # [1,18,1,11,1,28]
+            numberOfTypedBoxes = dictSimplifiedBoxes[ListToStr(convertedBox).replace(" ",",")]
+            # 1
+            convertedBox.insert(0, numberOfTypedBoxes)
+             # [1,1,18,1,11,1,28]
+            convertedBox.insert(0,typeBoxNumber)
+            # [1,1,1,18,1,11,1,28]
+            section.append(convertedBox)
+
         for i in np.arange(len(section)):
-            savetxt(a,[np.array(section[i],dtype=np.int64)],delimiter=" ",fmt="%d")
+            savetxt(a, [np.array(section[i],dtype=np.int64)], delimiter=" ", fmt="%d")
+
     a.close()
 
+def ListToStr( transformedBox: list[int]):
+    return str([transformedBox[1],transformedBox[3],transformedBox[5]]).replace(",", "")
+
+
+
+#
+# Simplifica las cajas que son de igual tipo, e.i, de iguales dimensiones. a un diccionario.
+#
+# Lee cada caja de una en una y las almacena en el array de "visited". Esto a su vez,
+# transforma la caja que esta en forma de lista de enteros a un string. Este string
+# se almacenara como llave de un diccionario, cuyo valor es el NUMERO DE TIPO DE CAJAS.
+#
+def SimplifiedBoxes(boxes:list[list[int]]) -> dict[str, int]:
+    visited : list[list[int]] = []
+    nw : dict[str, int] = {}
+    for box in boxes:
+        print("Box: " + str(box))
+        stringedBox : str = cleanConvertedStringBox(str(box))
+
+        if not isArraysInMatrix(box, visited):
+            visited.append(box)
+            nw[stringedBox] = 1
+        else:
+            nw[stringedBox] += 1
+
+    return nw
+
+def cleanConvertedStringBox(convertedBoxString : str):
+    convertedBox : list[int]= []
+    currentNumber : str = ""
+    isX = True
+    isY = True
+    isZ = True
+
+    for characher in convertedBoxString:
+        if characher != "," and characher != " " and characher != "[" and characher != "]":
+            currentNumber += characher
+        else:
+            if currentNumber == "":
+                continue
+            if isX:
+                isX = False
+                convertedBox.append(int(currentNumber))
+            elif isY:
+                isX = False
+                convertedBox.append(int(currentNumber))
+            elif isZ:
+                isX = False
+                convertedBox.append(int(currentNumber))
+            else:
+                raise("Error, array has more than 3 dimensions")
+            currentNumber = ""
+
+    return "["+str(convertedBox[0])+","+str(convertedBox[1])+","+str(convertedBox[2])+"]"
+
+def StrToList( box : str ,validX : int, validY : int, validZ : int):
+    convertedBox : list[int]= []
+    currentNumber : str = ""
+    isX = True
+    isY = True
+    isZ = True
+
+    for characher in box:
+        if characher != "," and characher != "[" and characher != "]":
+            currentNumber += characher
+        else:
+            if currentNumber == "":
+                continue
+            if isX:
+                isX = False
+                convertedBox.append(validX)
+                convertedBox.append(int(currentNumber))
+            elif isY:
+                isX = False
+                convertedBox.append(validY)
+                convertedBox.append(int(currentNumber))
+            elif isZ:
+                isX = False
+                convertedBox.append(validZ)
+                convertedBox.append(int(currentNumber))
+            else:
+                raise("Error, array has more than 3 dimensions")
+            currentNumber = ""
+
+    return convertedBox
+
 def createPA():
+    createInstance("P1A2")
     createInstance("P2A2")
     createInstance("P3A2")
     createInstance("P4A2")
@@ -369,7 +488,7 @@ def createPA():
 
 
 
-def CreateInstance(problem:pd.Series):
+def CreateInstanceFromFile(problem:pd.Series):
     if problem[0][0] == " ":
         for i in np.arange(len(problem)):
             problem[i]=problem[i][1:]
@@ -407,24 +526,24 @@ def CreateInstance(problem:pd.Series):
 
 def GetInstance(nm:str):
     if nm=="P2A2":
-        return CreateInstance(pd.read_csv("Instance/P2A2.csv",header=None)[0])
+        return CreateInstanceFromFile(pd.read_csv("Instance/P2A2.csv",header=None)[0])
     elif nm=="P3A2":
-        return CreateInstance(pd.read_csv("Instance/P3A2.csv",header=None)[0])
+        return CreateInstanceFromFile(pd.read_csv("Instance/P3A2.csv",header=None)[0])
     elif nm=="P4A2":
-        return CreateInstance(pd.read_csv("Instance/P4A2.csv",header=None)[0])
+        return CreateInstanceFromFile(pd.read_csv("Instance/P4A2.csv",header=None)[0])
     elif nm=="P5A2":
-        return CreateInstance(pd.read_csv("Instance/P5A2.csv",header=None)[0])
+        return CreateInstanceFromFile(pd.read_csv("Instance/P5A2.csv",header=None)[0])
     elif nm=="BR1":
-        return  CreateInstance(pd.read_csv("Instance/BR1.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR1.csv",header=None)[0])
     elif nm=="BR2":
-        return  CreateInstance(pd.read_csv("Instance/BR2.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR2.csv",header=None)[0])
     elif nm=="BR3":
-        return  CreateInstance(pd.read_csv("Instance/BR3.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR3.csv",header=None)[0])
     elif nm=="BR4":
-        return  CreateInstance(pd.read_csv("Instance/BR4.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR4.csv",header=None)[0])
     elif nm=="BR5":
-        return  CreateInstance(pd.read_csv("Instance/BR5.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR5.csv",header=None)[0])
     elif nm=="BR6":
-        return  CreateInstance(pd.read_csv("Instance/BR6.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR6.csv",header=None)[0])
     elif nm=="BR7":
-        return  CreateInstance(pd.read_csv("Instance/BR7.csv",header=None)[0])
+        return  CreateInstanceFromFile(pd.read_csv("Instance/BR7.csv",header=None)[0])

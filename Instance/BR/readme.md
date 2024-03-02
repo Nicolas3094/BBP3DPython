@@ -25,19 +25,31 @@ shown in the following example:
      Example:
 
  60 2508405    the problem number p, seed number used in [1]
+
  587 233 220   container length, width, height
+
  10            number of box types n
+
  1  78 1 72 1 58 1 14
+
  2  107 1 57 1 57 1 11      where there is one line for each box type
+
  3 ...................
+
  etc for n lines
-The line for each box type contains 8 numbers:                         
+
+The line for each box type contains 8 numbers:     
+
 box type i, box length, 0/1 indicator
+
 box width, 0/1 indicator
+
 box height, 0/1 indicator
+
 number of boxes of type i
 
 After each box dimension the 0/1 indicates whether placement in the 
+
 vertical orientation is permissible (=1) or not (=0)
 
 This file contains the Bischoff/Ratcliff container loading problems as here but with the extended datasets also (eg, as used in Davies/Bischoff 1999).
